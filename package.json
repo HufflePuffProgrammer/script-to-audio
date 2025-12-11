@@ -6,9 +6,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "debug:elevenlabs": "node --env-file=.env.local ./scripts/debug-elevenlabs.mjs",
+    "smoke:generate": "node --env-file=.env.local ./scripts/smoke-generate-audio.mjs"
   },
   "dependencies": {
+    "@elevenlabs/elevenlabs-js": "^2.27.0",
+    "dotenv": "^16.4.5",
     "next": "16.0.8",
     "react": "19.2.1",
     "react-dom": "19.2.1"
