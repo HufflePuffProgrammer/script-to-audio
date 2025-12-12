@@ -138,6 +138,12 @@ export default function AudioStep() {
             <span className="text-slate-500">
               Opens a sample call to /api/generate-audio with playback.
             </span>
+            <Link
+              href="/admin"
+              className="inline-flex items-center gap-1 rounded-full border border-slate-200 px-3 py-1 font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
+              Admin DB check
+            </Link>
           </div>
         </header>
 
