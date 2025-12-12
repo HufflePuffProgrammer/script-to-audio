@@ -18,6 +18,7 @@ Visit http://localhost:3000 and paste ~800-1000 words of screenplay text to see 
 - UI: http://localhost:3000/steps/debug — runs a sample request to `/api/generate-audio` and plays the returned audio.
 - CLI smoke: `npm run smoke:generate` (dev server + `ELEVENLABS_API_KEY` required; override host with `SMOKE_URL`).
 - Local connectivity: `npm run debug:elevenlabs` to hit ElevenLabs directly from a script.
+- Admin smoke: `npm run smoke:admin` (calls `/api/admin/db-check` and `/api/admin/health`; override host with `SMOKE_URL`).
 
 ## What’s implemented now
 - Project scaffold with Tailwind v4 and App Router.

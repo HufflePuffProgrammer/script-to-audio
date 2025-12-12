@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "debug:elevenlabs": "node --env-file=.env.local ./scripts/debug-elevenlabs.mjs",
-    "smoke:generate": "node --env-file=.env.local ./scripts/smoke-generate-audio.mjs"
+    "smoke:generate": "node --env-file=.env.local ./scripts/smoke-generate-audio.mjs",
+    "smoke:admin": "node --env-file=.env.local ./scripts/smoke-admin.mjs"
   },
   "dependencies": {
     "@elevenlabs/elevenlabs-js": "^2.27.0",
