@@ -12,11 +12,11 @@ export async function POST() {
     }
 
     // Lightweight connectivity check: head request with count
-    const { error,id,count } = await supabase
+    const { error,data,count } = await supabase
       .from("screenplays")
       .select("id", { count: "exact", head: true })
       .limit(1);
-console.log("id",id);
+console.log("id",data);
 console.log("count",count);
     if (error) {
       return NextResponse.json(
