@@ -8,9 +8,8 @@ interface LLMCharacterInput {
 
 export function buildLLMCharacterInput(
   parsedScreenplay: unknown,
-  characterName: string
+
 ): LLMCharacterInput {
-  console.log("1-Building character input");
 
   const llmInput: LLMCharacterInput = {
     character: "Kyler",

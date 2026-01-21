@@ -1,30 +1,27 @@
 import { CharacterProfile } from "./step-3-generateCharacterProfile";
 
-export function buildElevenLabsVoicePrompt(
+export function buildVoicePrompt(
   characterName: string,
   profile: CharacterProfile,
   sampleDialogue: string[] = []
 ): string {
-  console.log("Step-4-buildElevenLabsVoicePrompt", characterName);
-  //console.log("profile",profile);
-  //console.log("sampleDialogue",sampleDialogue);
+  
   return `
   Character Name: ${characterName}
   
-  Age: ${profile.age}
+  Age Range: ${profile.age}
   Gender: ${profile.gender}
   
-  Personality Traits:
-  ${profile.traits}
-  
+  Personality:
+  ${profile.traits.split(",").map((trait) => `- ${trait}`).join("\n")}
   Vocal Style:
-  ${profile.voiceStyle}
+  ${profile.voiceStyle.split(",").map((style) => `- {$style}`).join("\n")}
   
   Speech Pattern:
-  ${profile.speechPattern}
+  ${profile.speechPattern.split(",").map((pattern) => `- ${pattern}`).join("\n")}
   
   Tone:
-  ${profile.tone}
+  ${profile.tone.split(",").map((tone) => `- ${tone}`).join("\n")}
   
   Performance Guidance:
   Deliver lines in a way that reflects the personality and tone above.

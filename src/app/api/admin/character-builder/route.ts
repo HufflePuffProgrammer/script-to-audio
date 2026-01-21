@@ -2,23 +2,16 @@ import { NextResponse } from "next/server";
 import {buildLLMCharacterInput} from "./step-1-buildLLMCharacterInput";
 import {buildCharacterProfilingPrompt} from "./step-2-buildCharacterProfilingPrompt";
 import {generateCharacterProfile} from "./step-3-generateCharacterProfile";
-import {buildElevenLabsVoicePrompt} from "./step-4-buildElevenLabsVoicePrompt";
+import {buildVoicePrompt} from "./step-4-buildVoicePrompt";
 import {buildVoiceRankingPrompt} from "./step-5-2-VoiceRankingPrompt";
 import {rankVoicesWithClaude} from "./step-5-3-RankVoicesWithClaude";
 import {assignVoiceToCharacter} from "./step-5-4-AssignVoiceToCharacter";
-//import {AssignElevenLabsAgent} from "./step-5-AssignElevenLabsAgent";
+import {AssignElevenLabsAgent} from "./step-5-1-AssignElevenLabsAgent";
 import { AvailableVoices, getAvailableVoices } from "../utils";
 
 
-const characterName = "SARAH";
-const sampleDialogue = [
-    "Hello, how are you?",
-    "I'm fine, thank you.",
-    "What's your name?",
-    "My name is Sarah.",
-    "Nice to meet you, Sarah.",
-];
-interface LLMCharacterInput {
+
+export interface LLMCharacterInput {
     character: string;
     genre: string;
     profilingSceneLimit: number;
@@ -66,37 +59,44 @@ export async function GET() {
 
     console.log("Character builder route");
     const parsedScreenplay = await getParsedScreenplay();
-    const characterName="MARA";
+    const characterName="Kyler";
 
-  // await test();
+ 
     //1. Generate character profile
-   const llmInput = buildLLMCharacterInput(parsedScreenplay, characterName);
-    console.log(llmInput)
+   const llmInput = buildLLMCharacterInput(parsedScreenplay);
+ 
     //2. Build ElevenLabs voice prompt
     const profilePrompt = buildCharacterProfilingPrompt(llmInput);
 
     //3. Assign ElevenLabs agent
     const profile = await generateCharacterProfile(llmInput,profilePrompt);
   
-    console.log(profile);
-    //4. Generate audio
-    const voicePrompt = buildElevenLabsVoicePrompt(characterName, profile, llmInput.sampleDialogue);
-    console.log("voicePrompt");
-    //console.log(voicePrompt);
+    //4. Voice Prompt
+    const voicePrompt = buildVoicePrompt(characterName, profile, llmInput.sampleDialogue);
+
 
     //5. Store audio in Supabase
     //TODO: Implement this
     //const audioUrl = await AssignElevenLabsAgent(characterName,voicePrompt);
+    //console.log("audioUrl");
+    //console.log(audioUrl);
+
+    //5-1 Get Available Voices
     const availableVoices = await getAvailableVoices();
-    const reasonOutput = await buildVoiceRankingPrompt(profile, availableVoices);
-    console.log("reasonOutput");
-    //console.log(reasonOutput);
-   const rankedVoices = await rankVoicesWithClaude(profile, availableVoices, reasonOutput);
-    console.log("rankedVoices");
-   console.log(rankedVoices);
-   const voiceId = await assignVoiceToCharacter(characterName, profile, availableVoices, rankedVoices.best_voice_id);
-   console.log("voiceId");
-   console.log(voiceId);
+
+    //5-2 Voice Ranking Prompt
+    const voiceRankingPrompt = await buildVoiceRankingPrompt(profile, availableVoices);
+
+    //5-3 Rank Voices with Claude
+    const bestRankedVoice = await rankVoicesWithClaude(profile, availableVoices, voiceRankingPrompt);
+
+    console.log("bestRankedVoice");
+    console.log(bestRankedVoice);
+
+    //6- Assign Voice to Character. Upsert to database
+   //const voiceId = await assignVoiceToCharacter(characterName, profile, bestRankedVoice.best_voice_id, bestRankedVoice.reason);
+  // console.log("voiceId");
+  // console.log(voiceId);
      return NextResponse.json({ ok: true });
 
 }

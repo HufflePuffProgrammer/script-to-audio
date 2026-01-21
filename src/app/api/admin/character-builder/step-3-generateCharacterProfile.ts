@@ -9,7 +9,7 @@ export interface CharacterProfile {
   tone: string;
   confidence?: string;
 }
-
+  import { LLMCharacterInput } from "./route";
 /**
  * Generates a character profile using Anthropic's Claude model.
  * 
@@ -21,7 +21,7 @@ export interface CharacterProfile {
  * handles structured JSON output well.
  */
 export async function generateCharacterProfile(
-  llmInput: unknown,
+  llmInput: LLMCharacterInput,
   profilePrompt: string
 ): Promise<CharacterProfile> {
   console.log("3-Generating character profile");

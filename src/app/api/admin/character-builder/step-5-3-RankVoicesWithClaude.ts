@@ -6,15 +6,15 @@ const MODEL = process.env.CLAUDE_MODEL
 
 
 const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY
+  apiKey: process.env.ANTHROPIC_API_KEY_CHARACTER_PROFILE
 });
 
 export async function rankVoicesWithClaude(characterProfile: CharacterProfile, voices: AvailableVoices[], prompt: string) {
 
-  console.log("before claude");
+
   const response = await anthropic.messages.create({
     model: MODEL,
-    max_tokens: 300,
+    max_tokens: 400,
     temperature: 0.1,
     messages: [
       {
@@ -23,14 +23,7 @@ export async function rankVoicesWithClaude(characterProfile: CharacterProfile, v
       }
     ]
   });
-  // const res = await anthropic.messages.create({
-  //   model: "claude-3-5-haiku-20241022",
-  //   max_tokens: 10,
-  //   messages: [{ role: "user", content: "Say hi" }]
-  // });
 
-  // console.log(res.content[0].text);
-  console.log("after claude");
   
   const text = response.content[0].type === "text" 
     ? response.content[0].text.trim()
@@ -40,12 +33,11 @@ export async function rankVoicesWithClaude(characterProfile: CharacterProfile, v
     throw new Error("Claude response did not contain text content");
   }
 
-  console.log("response");
+
   try {
    // Remove markdown code blocks if present
     const cleanedText = text.replace(/^```json\n?/g, "").replace(/\n?```$/g, "").trim();
-    console.log("cleanedText");
-    console.log(cleanedText);
+
     return JSON.parse(cleanedText);
   } catch (err) {
     console.error("Claude voice ranking returned invalid JSON:", text);
