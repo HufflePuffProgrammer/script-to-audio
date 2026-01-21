@@ -69,7 +69,8 @@ console.log("line",line);
       }
     });
   });
-
+console.log("characterFirstScene");
+console.log(characterFirstScene);
   return {
     scenes,
     sceneCount: scenes.length,
