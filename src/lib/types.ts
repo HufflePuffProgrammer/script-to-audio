@@ -32,5 +32,12 @@ export type CharacterProfile = {
   confidence?: string;
 };
 
+export type CharacterInput = {
+  character: string;
+  genre: string;
+  profilingSceneLimit: number;
+  sceneContext: string[];
+  sampleDialogue: string[];
+}
 export type AudioStatus = "idle" | "generating" | "ready" | "error";
 

@@ -1,96 +1,139 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-type Status = "idle" | "loading" | "success" | "error";
+import { useScriptText } from "@/lib/useScriptText";
+import { FormEvent, useState } from "react";
 
-;
+const steps = ["Paste Script", "build LLM Char Input", "build Char Prompt ", "Generate complete audio"];
 
-export default function DebugElevenLabsPage() {
-  const [status, setStatus] = useState<Status>("idle");
-  const [message, setMessage] = useState<string>("");
-  const [audioUrl, setAudioUrl] = useState<string>("");
 
-  const runDebug = async () => {
-    setStatus("loading");
-    setMessage("");
-    setAudioUrl("");
+const Progress = ({ activeIndex }: { activeIndex: number }) => {
+  const progress = (activeIndex / (steps.length - 1)) * 100;
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-slate-500">
+        {steps.map((label, idx) => (
+          <span key={label} className={idx <= activeIndex ? "text-[#111827]" : "text-slate-400"}>
+            {label}
+          </span>
+        ))}
+      </div>
+      <div className="relative h-2 overflow-hidden rounded-full bg-slate-200">
+        <div
+          className="absolute inset-y-0 left-0 rounded-full bg-[#f9cf00] transition-all"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+    </div>
+  );
+};
 
-    try {
-      const res = await fetch("/api/generate-audio", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          scene_id: "1",
-          dialogue: [
-            { character: "MARA", text: "Hello, how are you?" },
-            { character: "DAVID", text: "I'm good, thank you." },
-          ],
-        }),
-      });
+export default function PasteStep() {
+  const { text, setText, clear, hasText, characters } = useScriptText();
+  const [status, setStatus] = useState("");
 
-      const body = await res.json();
-      if (!res.ok) {
-        throw new Error(body?.error || `Request failed with ${res.status}`);
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setStatus("Submitting...");
+    console.log("Text:", text);
+      try {
+        const response = await fetch("/api/admin/character-builder", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            text,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Request failed");
+        }
+
+        const data = await response.json();
+
+        console.log("Server response:", data);
+
+        setStatus("Saved!");
+        setText(""); // clear form
+      } catch (error) {
+        console.error(error);
+        setStatus("Error submitting form");
       }
-      if (!body?.audio_url || typeof body.audio_url !== "string") {
-        throw new Error("Missing audio_url in response");
-      }
-
-      setAudioUrl(body.audio_url);
-      setStatus("success");
-      setMessage("Audio generated successfully. Press play below.");
-    } catch (err) {
-      setStatus("error");
-      setMessage(err instanceof Error ? err.message : "Unknown error");
-    }
   };
 
   return (
-    <main className="min-h-screen bg-white text-gray-900 px-6 py-10">
-      <div className="max-w-3xl mx-auto space-y-6">
+    <main className="min-h-screen bg-[#f4f6fb]">
+      <div className="mx-auto flex max-w-5xl flex-col gap-6 px-6 py-10 lg:px-10">
+
         <header className="space-y-2">
-          <p className="text-sm font-semibold text-blue-600 uppercase">
-            Debug
+          <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+            Step 1 of 4
           </p>
-          <h1 className="text-3xl font-bold">Character Builder</h1>
-          <p className="text-sm text-gray-600">
-            Calls <code>/api/build-character</code> with a sample dialogue and
-            surfaces the returned <code>audio_url</code>
-            
+          <h1 className="text-2xl font-bold text-slate-900">Paste Text (demo)</h1>
+          <p className="text-slate-600">
+            Paste screenplay text in the box.
           </p>
+          <Progress activeIndex={0} />
         </header>
 
-        <section className="rounded-lg border border-gray-200 p-4 space-y-3">
-          <div>
-            <div className="text-sm font-semibold text-gray-800">
-              Sample payload
-            </div>
-
-          </div>
-
-          <Link
-                href="/api/admin/character-builder"
-                className="inline-flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <section className="space-y-3 rounded-3xl bg-white p-6 shadow-md ring-1 ring-slate-200">
+            <textarea
+              name="text"
+              placeholder="Paste screenplay text..."
+              className="min-h-[280px] w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 shadow-inner focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+              value={text}
+              onChange={(event) => setText(event.target.value)}
+            />
+            <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-600">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-2 rounded-full bg-[#f9cf00]/80 px-3 py-1 text-xs font-semibold text-[#1b1b1b] shadow-sm">
+                  Saved locally
+                </span>
+                <span>{characters} characters</span>
+              </div>
+              <button
+                type="button"
+                onClick={clear}
+                className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
               >
-                Go to character builder
-              </Link>
-        </section>
-        <section className="rounded-lg border border-gray-200 p-4 space-y-3">
-          <div>
-            <div className="text-sm font-semibold text-gray-800">
-              Sample payload
+                Clear
+              </button>
             </div>
-
-          </div>
-
-          <Link
-                href="/api/admin/test"
-                className="inline-flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+          </section>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Link
+              href="/admin"
+              className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
+              Back to Admin
+            </Link>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                className="rounded-full bg-[#f9cf00] px-4 py-2 text-sm font-semibold text-[#1b1b1b] shadow-md transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
+                aria-disabled={!hasText}
+                tabIndex={hasText ? 0 : -1}
+                type="submit"
               >
-                test
+                Build Character
+              </button>
+              <Link
+                href="/admin/steps/build-character-input"
+                className="rounded-full bg-[#f9cf00] px-4 py-2 text-sm font-semibold text-[#1b1b1b] shadow-md transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
+                aria-disabled={!hasText}
+                tabIndex={hasText ? 0 : -1}
+              >
+                Next: Build Character input
               </Link>
-        </section>
+            </div>
+          </div>
+          {status && (
+            <p className="text-sm font-medium text-slate-600">{status}</p>
+          )}
+        </form>
+
       </div>
     </main>
   );

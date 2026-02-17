@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useScriptText } from "@/lib/useScriptText";
 
-const steps = ["Paste Text", "Scenes", "Audio Staging", "Generate complete audio"];
+const steps = ["Paste Script", "build LLM Char Input", "build Char Prompt ", "Generate complete audio"];
+
 
 const Progress = ({ activeIndex }: { activeIndex: number }) => {
   const progress = (activeIndex / (steps.length - 1)) * 100;
@@ -32,6 +33,7 @@ export default function PasteStep() {
   return (
     <main className="min-h-screen bg-[#f4f6fb]">
       <div className="mx-auto flex max-w-5xl flex-col gap-6 px-6 py-10 lg:px-10">
+
         <header className="space-y-2">
           <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
             Step 1 of 4
@@ -75,14 +77,15 @@ export default function PasteStep() {
             Back to Admin
           </Link>
           <Link
-            href="/admin/scenes"
+            href="/admin/character-builder/steps/step-2-charinput"
             className="rounded-full bg-[#f9cf00] px-4 py-2 text-sm font-semibold text-[#1b1b1b] shadow-md transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
             aria-disabled={!hasText}
             tabIndex={hasText ? 0 : -1}
           >
-            Next: Scenes
+            Next: Build Character input
           </Link>
         </div>
+
       </div>
     </main>
   );

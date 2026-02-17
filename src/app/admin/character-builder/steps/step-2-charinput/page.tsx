@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useScriptText } from "@/lib/useScriptText";
+import { useScriptTextPaste } from "@/lib/useScriptText2";
 import { useParsedScenes, ParsedScenesCache } from "@/lib/useParsedScenes";
 import { Scene } from "@/lib/types";
 
@@ -34,40 +34,55 @@ type ParseResponse = {
   sceneCount: number;
 };
 
+interface LLMCharacterInput {
+    character: string;
+    genre: string;
+    profilingSceneLimit: number;
+    sceneContext: string[];
+    sampleDialogue: string[];
+  };
 
-export default function ScenesStep() {
-  const { text, hasText } = useScriptText();
+const llmInput: LLMCharacterInput = {
+    character: "Kyler",
+    genre: "Comedy",
+    profilingSceneLimit: 1,
+    sceneContext: [
+      "Scene Heading: INT. BASEMENT - NIGHT",
+      "Dark, empty basement. The air is silent except for faint breathing.",
+    ],
+    sampleDialogue: ["I can see you", "Booger bo bo bo!"],
+  };
+
+
+export default function Step2CharInput() {
+  const { textPaste, setTextPaste, clear, hasText, characters } = useScriptTextPaste();
+    const [output, setOutput] = useState(null);
+
   const { data: cached, setData: setCache, hasScenes: hasCachedScenes } = useParsedScenes();
   const [status, setStatus] = useState<"idle" | "loading" | "error" | "ready">("idle");
   const [message, setMessage] = useState("Paste text in Step 1, then parse.");
   const [scenes, setScenes] = useState<Scene[]>([]);
 
   const firstThreeScenes = useMemo(() => scenes.slice(0, 3), [scenes]);
-
   const parse = async () => {
-    if (!hasText) {
-      setMessage("No text found. Paste screenplay in Step 1 first.");
-      return;
-    }
+
     try {
+  
       setStatus("loading");
       setMessage("Parsing screenplay...");
-      const response = await fetch("/api/parse", {
+      const response = await fetch("/api/admin/character-builder/steps/step-2-charinput", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ llmInput }),
       });
-      if (!response.ok) throw new Error("Parse failed");
-      const data: ParseResponse = await response.json();
-      setScenes(data.scenes);
-      setCache({
-        scenes: data.scenes,
-        sceneCount: data.sceneCount,
-        characterFirstScene: {},
-        audioUrls: cached?.audioUrls || {},
-      });
-      setStatus("ready");
-      setMessage(`Parsed ${data.sceneCount} scene(s). Showing the first three below.`);
+
+      const data = await response.json();
+      console.log("Data:",data.llmInput.llmInput.character);
+      //setOutput(data.llmInput.llmInput.character);
+      //console.log("Output:", output);
+      setTextPaste(data.llmInput.llmInput.character);
+      console.log("Text Paste:", textPaste);
+
     } catch (error) {
       setStatus("error");
       setMessage("Failed to parse screenplay. Please try again.");
@@ -81,9 +96,8 @@ export default function ScenesStep() {
       setMessage(`Loaded ${cached.sceneCount} scene(s) from cache.`);
       return;
     }
-    if (hasText) {
-      parse();
-    }
+
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasText, hasCachedScenes, cached]);
 
@@ -106,23 +120,22 @@ export default function ScenesStep() {
             <button
               type="button"
               onClick={parse}
-              disabled={!hasText || status === "loading"}
               className="rounded-full bg-[#f9cf00] px-4 py-2 text-sm font-semibold text-[#1b1b1b] shadow-md transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {status === "loading" ? "Parsing..." : "Parse screenplay"}
+              Parse Text
             </button>
             <span className="text-sm text-slate-600">{message}</span>
           </div>
-          {!hasText && (
-            <p className="text-sm text-red-600">
-              No screenplay text found. Go back to Paste step and add text.
-            </p>
-          )}
+
         </section>
 
         <section className="grid gap-4 lg:grid-cols-2">
           <div className="space-y-3 rounded-3xl bg-white p-6 shadow-md ring-1 ring-slate-200">
+          <p className="text-sm font-semibold text-slate-900">Part llmInput - t</p>
             <p className="text-sm font-semibold text-slate-900">Part A — List</p>
+            <p className="text-sm font-semibold text-slate-900">Number of Scenes: {firstThreeScenes.length}</p>
+            <p className="text-sm font-semibold text-slate-900">Number of Characters: {firstThreeScenes.reduce((acc, scene) => acc + scene.characters.length, 0)}</p>
+            <p className="text-sm font-semibold text-slate-900">List of Characters: {firstThreeScenes.flatMap((scene) => scene.characters).join(", ")}</p>
             {firstThreeScenes.length === 0 && (
               <p className="text-sm text-slate-500">No scenes parsed yet.</p>
             )}
@@ -137,7 +150,12 @@ export default function ScenesStep() {
             ))}
           </div>
 
+
           <div className="space-y-3 rounded-3xl bg-white p-6 shadow-md ring-1 ring-slate-200">
+          <p className="text-sm font-semibold text-slate-900">Part B — llmInput</p>
+          <p className="text-sm text-slate-500">llmOutput:{output}</p>
+          </div>
+          {/* <div className="space-y-3 rounded-3xl bg-white p-6 shadow-md ring-1 ring-slate-200">
             <p className="text-sm font-semibold text-slate-900">Part B — Details</p>
             {firstThreeScenes.length === 0 && (
               <p className="text-sm text-slate-500">No details yet.</p>
@@ -166,7 +184,11 @@ export default function ScenesStep() {
                 </div>
               </div>
             ))}
-          </div>
+          </div> */}
+
+          
+
+          
         </section>
 
         <div className="flex justify-between">

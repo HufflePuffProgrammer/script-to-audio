@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { parseScriptToCharInput } from "@/lib/parseScriptToCharInput";
 import {buildLLMCharacterInput} from "./step-1-buildLLMCharacterInput";
 import {buildCharacterProfilingPrompt} from "./step-2-buildCharacterProfilingPrompt";
 import {generateCharacterProfile} from "./step-3-generateCharacterProfile";
@@ -54,10 +55,22 @@ async function getParsedScreenplay() {
  */
 
   
-export async function GET() {
-
+// export async function GET() {
+  export async function POST(request: Request) {
+    try {
+      const { text } = await request.json();
+      if (!text || typeof text !== "string" || !text.trim()) {
+        return NextResponse.json({ error: "No screenplay text provided." }, { status: 400 });
+      }
+      const parsedScreenplay = parseScriptToCharInput(text);
+      return NextResponse.json({ parsedScreenplay });
+    } catch (error) {
+      console.error("Character builder route error", error);
+      return NextResponse.json({ error: "Failed to parse screenplay." }, { status: 500 });
+    }
 
     console.log("Character builder route");
+/*****
     const parsedScreenplay = await getParsedScreenplay();
     const characterName="Kyler";
 
@@ -92,11 +105,20 @@ export async function GET() {
 
     console.log("bestRankedVoice");
     console.log(bestRankedVoice);
-
+****/
     //6- Assign Voice to Character. Upsert to database
    //const voiceId = await assignVoiceToCharacter(characterName, profile, bestRankedVoice.best_voice_id, bestRankedVoice.reason);
   // console.log("voiceId");
   // console.log(voiceId);
-     return NextResponse.json({ ok: true });
+     return NextResponse.json({ 
+      ok: true 
+    });
+
+    //  NextResponse.json({
+    //   scenes: parsed.scenes,
+    //   sceneCount: parsed.sceneCount,
+    //   characterFirstScene: parsed.characterFirstScene,
+    //   screenplay_id: screenplayId,
+    // });
 
 }
