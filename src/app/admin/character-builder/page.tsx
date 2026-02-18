@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useScriptText } from "@/lib/useScriptText";
-import { FormEvent, useState } from "react";
+import { ChangeEvent, FormEvent, useState } from "react";
 
 const steps = ["Paste Script", "build LLM Char Input", "build Char Prompt ", "Generate complete audio"];
 
@@ -31,6 +31,8 @@ const Progress = ({ activeIndex }: { activeIndex: number }) => {
 export default function PasteStep() {
   const { text, setText, clear, hasText, characters } = useScriptText();
   const [status, setStatus] = useState("");
+  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
+  const [isExtracting, setIsExtracting] = useState(false);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -63,6 +65,40 @@ export default function PasteStep() {
       }
   };
 
+  const handlePdfUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (file.type !== "application/pdf") {
+      setUploadStatus("Only PDF uploads are supported right now.");
+      return;
+    }
+
+    setIsExtracting(true);
+    setUploadStatus("Extracting text from PDF...");
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdfjs = await import("pdfjs-dist");
+      pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+      const document = await pdfjs.getDocument({ data: arrayBuffer }).promise;
+      let extractedText = "";
+      for (let pageIndex = 1; pageIndex <= document.numPages; pageIndex += 1) {
+        const page = await document.getPage(pageIndex);
+        const content = await page.getTextContent();
+        const pageText = (content.items as { str?: string }[])
+          .map((item) => item.str ?? "")
+          .join(" ");
+        extractedText += `${pageText}\n`;
+      }
+      setText(extractedText.trim());
+      setUploadStatus("PDF text extracted successfully.");
+    } catch (error) {
+      console.error("Failed to parse PDF", error);
+      setUploadStatus("Could not extract text from this PDF.");
+    } finally {
+      setIsExtracting(false);
+    }
+  };
+
   return (
     <main className="min-h-screen bg-[#f4f6fb]">
       <div className="mx-auto flex max-w-5xl flex-col gap-6 px-6 py-10 lg:px-10">
@@ -87,6 +123,16 @@ export default function PasteStep() {
               value={text}
               onChange={(event) => setText(event.target.value)}
             />
+            <label className="text-sm font-semibold text-slate-600">
+              Or upload a PDF (auto-extracts text):
+              <input
+                type="file"
+                accept="application/pdf"
+                disabled={isExtracting}
+                onChange={handlePdfUpload}
+                className="mt-2 block w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 shadow-inner transition focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+              />
+            </label>
             <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-600">
               <div className="flex items-center gap-2">
                 <span className="inline-flex items-center gap-2 rounded-full bg-[#f9cf00]/80 px-3 py-1 text-xs font-semibold text-[#1b1b1b] shadow-sm">
@@ -131,6 +177,9 @@ export default function PasteStep() {
           </div>
           {status && (
             <p className="text-sm font-medium text-slate-600">{status}</p>
+          )}
+          {uploadStatus && (
+            <p className="text-sm text-slate-500">{uploadStatus}</p>
           )}
         </form>
 

@@ -1,119 +1,121 @@
-import { narratorLabel, characterPattern, headingPattern } from "./constants";
-import { Scene,CharacterInput } from "./types";
+import { characterPattern, headingPattern } from "./constants";
+import { CharacterInput } from "./types";
 
+const isCharacterLine = (line: string) =>
+  characterPattern.test(line) && line === line.toUpperCase();
 
-
-const makeId = (prefix: string, index: number) =>
-  `${prefix}-${index}-${Math.random().toString(16).slice(2, 8)}`;
+const stageDirectionPattern = /^(CLOSE ON|ANGLE ON|CUT TO|PAN TO|DISSOLVE TO|FADE (IN|OUT)|CAMERA|A VOICE)/i;
+const stageDirectionVerbs = [
+  "opens",
+  "bursts",
+  "walks",
+  "runs",
+  "stands",
+  "sits",
+  "comes",
+  "goes",
+  "arrives",
+  "enters",
+  "exits",
+  "rushes",
+  "throws",
+  "carries",
+  "leans",
+  "holds",
+  "grabs",
+  "points",
+  "shouts",
+  "whispers",
+  "smiles",
+  "laughs",
+  "stares",
+  "gazes",
+  "falls",
+  "spins",
+  "flips",
+  "opens",
+  "slams",
+  "breaks",
+];
+const isStageDirectionLine = (line: string) => {
+  const lowerLine = line.toLowerCase();
+  return (
+    stageDirectionPattern.test(line) ||
+    stageDirectionVerbs.some((verb) => lowerLine.includes(verb))
+  );
+};
 
 export function parseScriptToCharInput(text: string) {
+  const lines = text.split(/\r?\n/);
+  const characterInputs: CharacterInput[] = [];
 
-    const lines = text
-    .split(/\r?\n/)
-    //.map((l) => l.trim())
-    //.filter(Boolean);
+  let sceneContextLines: string[] = [];
+  let sceneCharacterDialogues = new Map<string, string[]>();
+  let sceneCharacterOrder: string[] = [];
+  let activeCharacter: string | null = null;
 
+  const getSceneContext = () =>
+    sceneContextLines.filter(Boolean).join("\n").trim();
 
-    const scenes: Scene[] = [];
-    const characterInputs: CharacterInput[] = [];
-    const charactersOfScene: Record<string,number> = {};
-    let currentScene: Scene | null = null;
-    let currentCharacter: string | null = null;
-    let currentDialogue: string = "";
-    let isNewCharacter: boolean = false;
-
-console.log("parseScriptToCharInput");
-console.log("lines",lines.length);
-    lines.forEach((line)=> {
-        if (headingPattern.test(line)) {
-            if (currentScene) scenes.push(currentScene);
-            currentScene = {
-                id: makeId("scene", scenes.length + 1),
-                sceneNumber: scenes.length + 1,
-                heading: line,
-                characters: [],
-                dialogue: [],
-            };
-            currentCharacter = null;
-            return;
-        }
-
-        if (characterPattern.test(line) && line === line.toUpperCase()) {
-           isNewCharacter = true;
-            currentCharacter = line;
-            console.log("new character:",currentCharacter);
-            characterInputs.push({
-                character: currentCharacter,
-                genre: "Unknown",
-                profilingSceneLimit: 1,
-                sceneContext: [],
-                sampleDialogue: [],
-            });
-            charactersOfScene[currentCharacter] = characterInputs.length;
-            return;
-        }
-
-        if (!currentScene) {
-            currentScene = {
-                id: makeId("scene", scenes.length + 1),
-                sceneNumber: scenes.length + 1,
-                heading: "SCENE",
-                characters: [],
-                dialogue: [],
-            };
-        }
-
-        const character = currentCharacter ?? narratorLabel;
-        const isNarration = !currentCharacter;
-        if (isNewCharacter) {
-            isNewCharacter = false;
-            currentDialogue = "";
-        }
-        else{
-            currentDialogue = currentDialogue + " " + line;
-           // characterInputs
-            console.log("character", character);
-            console.log("index", charactersOfScene[character]);
-            console.log("line:",line);
-            charactersOfScene[character] ??= 0;
-            console.log("index 2:", charactersOfScene[character]);
-           characterInputs[charactersOfScene[character]].sampleDialogue.push(line);
-        
-        }
-        //if (isNarration) console.log("narration:",line);
-       // console.log("character", character);
-        //console.log("line:",line);
-
-        currentScene.dialogue.push({
-            character,
-            text: line,
-            isNarration,
-                });
-        if (character !== narratorLabel && !currentScene.characters.includes(character)) {
-
-        currentScene.characters.push(character);
-        }
-    //console.log("line",line);
-    });
-
-    if (currentScene) scenes.push(currentScene);
-
-
-    console.log("number of scenes after push:",scenes.length);
-    scenes.forEach((scene)=> {
-        console.log("scene:",scene.heading);
-        console.log("characters", scene.characters.join(" ,"));
-        //console.log("dialogue", scene.dialogue.join("\n"));
-    });
-    for (const character in Object.keys(charactersOfScene)){
-        console.log("character:",character);
+  const flushScene = () => {
+    const sceneContext = getSceneContext();
+    for (const character of sceneCharacterOrder) {
+      const dialogue = sceneCharacterDialogues.get(character) ?? [];
+      characterInputs.push({
+        character,
+        sceneContext,
+        dialogue,
+      });
     }
-    for (const index in Object.values(charactersOfScene)) {
-        console.log("index:",index);
+    sceneCharacterDialogues.clear();
+    sceneCharacterOrder = [];
+    sceneContextLines = [];
+    activeCharacter = null;
+  };
+
+  for (const rawLine of lines) {
+    const trimmedLine = rawLine.trim();
+    if (!trimmedLine) {
+      activeCharacter = null;
+      continue;
     }
-    // characterInputs.forEach((characterInput)=> {
-    //     console.log("characterInput:",characterInput.character);
-    //     //console.log("sampleDialogue:",characterInput.sampleDialogue.join("\n"));
-    // });
-return characterInputs;
+
+    if (headingPattern.test(trimmedLine)) {
+      flushScene();
+      continue;
+    }
+
+    if (isCharacterLine(trimmedLine)) {
+      activeCharacter = trimmedLine;
+      if (!sceneCharacterDialogues.has(trimmedLine)) {
+        sceneCharacterDialogues.set(trimmedLine, []);
+        sceneCharacterOrder.push(trimmedLine);
+      }
+      continue;
+    }
+
+    if (activeCharacter && isStageDirectionLine(trimmedLine)) {
+      sceneContextLines.push(rawLine.trim());
+      activeCharacter = null;
+      continue;
+    }
+
+    const endsWithColon = trimmedLine.endsWith(":");
+    if (!activeCharacter || endsWithColon) {
+      sceneContextLines.push(rawLine.trim());
+      activeCharacter = null;
+      continue;
+    }
+
+    if (activeCharacter) {
+      const dialogue = sceneCharacterDialogues.get(activeCharacter);
+      dialogue?.push(trimmedLine);
+    }
+  }
+
+  if (sceneCharacterOrder.length) {
+    flushScene();
+  }
+
+  return characterInputs;
 }

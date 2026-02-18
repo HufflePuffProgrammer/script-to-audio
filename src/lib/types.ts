@@ -34,10 +34,8 @@ export type CharacterProfile = {
 
 export type CharacterInput = {
   character: string;
-  genre: string;
-  profilingSceneLimit: number;
-  sceneContext: string[];
-  sampleDialogue: string[];
-}
+  sceneContext: string;
+  dialogue: string[];
+};
 export type AudioStatus = "idle" | "generating" | "ready" | "error";
 
