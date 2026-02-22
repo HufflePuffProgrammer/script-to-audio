@@ -53,6 +53,7 @@ export function parseScriptToCharInput(text: string) {
   let sceneCharacterDialogues = new Map<string, string[]>();
   let sceneCharacterOrder: string[] = [];
   let activeCharacter: string | null = null;
+  const indentedLinePattern = /^\s{2,}/;
 
   const getSceneContext = () =>
     sceneContextLines.filter(Boolean).join("\n").trim();
@@ -95,6 +96,13 @@ export function parseScriptToCharInput(text: string) {
     }
 
     if (activeCharacter && isStageDirectionLine(trimmedLine)) {
+      sceneContextLines.push(rawLine.trim());
+      activeCharacter = null;
+      continue;
+    }
+
+    const isIndented = indentedLinePattern.test(rawLine);
+    if (activeCharacter && isIndented) {
       sceneContextLines.push(rawLine.trim());
       activeCharacter = null;
       continue;

@@ -67,6 +67,7 @@ export default function PasteStep() {
 
   const handlePdfUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
+    console.log("file:",file?.name);
     if (!file) return;
     if (file.type !== "application/pdf") {
       setUploadStatus("Only PDF uploads are supported right now.");
@@ -77,19 +78,43 @@ export default function PasteStep() {
     setUploadStatus("Extracting text from PDF...");
     try {
       const arrayBuffer = await file.arrayBuffer();
-      const pdfjs = await import("pdfjs-dist");
-      pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+      const pdfjs = await import("pdfjs-dist/legacy/build/pdf");
+      pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
       const document = await pdfjs.getDocument({ data: arrayBuffer }).promise;
       let extractedText = "";
+     //console.log("document.numPages:",document.numPages);
+
       for (let pageIndex = 1; pageIndex <= document.numPages; pageIndex += 1) {
         const page = await document.getPage(pageIndex);
-        const content = await page.getTextContent();
-        const pageText = (content.items as { str?: string }[])
-          .map((item) => item.str ?? "")
-          .join(" ");
+        const content = await page.getTextContent({ normalizeWhitespace: false, disableCombineTextItems: true });
+        const pageText = (() => {
+          const buffer: string[] = [];
+          let prevY: number | null = null;
+          let atLineStart = true;
+          const indentThreshold = 10;
+          (content.items as Array<{ str?: string; transform?: number[] }>).forEach((item) => {
+            if (!item.str) return;
+            const y = item.transform?.[5];
+            const x = item.transform?.[4];
+            if (prevY !== null && y !== undefined && Math.abs(y - prevY) > 5) {
+              buffer.push("\n");
+              atLineStart = true;
+            }
+            if (atLineStart && x !== undefined && x > indentThreshold) {
+              buffer.push("\t");
+            }
+            buffer.push(item.str);
+            prevY = y ?? prevY;
+            atLineStart = false;
+          });
+          return buffer.join("");
+        })();
+        console.log("pageText:", JSON.stringify(pageText));
         extractedText += `${pageText}\n`;
       }
-      setText(extractedText.trim());
+      console.log("extractedText:",extractedText);
+      //setText(extractedText.trim());
+      setText(extractedText);
       setUploadStatus("PDF text extracted successfully.");
     } catch (error) {
       console.error("Failed to parse PDF", error);
