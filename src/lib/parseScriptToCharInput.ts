@@ -4,6 +4,9 @@ import { CharacterInput } from "./types";
 const isCharacterLine = (line: string) =>
   characterPattern.test(line) && line === line.toUpperCase();
 
+const canonicalizeCharacterName = (name: string) =>
+  name.replace(/\(O\.?S\.?\)/gi, "").trim();
+
 const stageDirectionPattern = /^(CLOSE ON|ANGLE ON|CUT TO|PAN TO|DISSOLVE TO|FADE (IN|OUT)|CAMERA|A VOICE)/i;
 const stageDirectionVerbs = [
   "opens",
@@ -44,6 +47,8 @@ const isStageDirectionLine = (line: string) => {
     stageDirectionVerbs.some((verb) => lowerLine.includes(verb))
   );
 };
+const ageDescriptorPattern = /\((?:\s*\d{1,3}s|\s*\d{1,3} ?years|[^)]*(?:years old|yrs old|year old))\b/i;
+const isDescriptionLine = (line: string) => ageDescriptorPattern.test(line);
 
 export function parseScriptToCharInput(text: string) {
   const lines = text.split(/\r?\n/);
@@ -87,21 +92,23 @@ export function parseScriptToCharInput(text: string) {
     }
 
     if (isCharacterLine(trimmedLine)) {
-      activeCharacter = trimmedLine;
-      if (!sceneCharacterDialogues.has(trimmedLine)) {
-        sceneCharacterDialogues.set(trimmedLine, []);
-        sceneCharacterOrder.push(trimmedLine);
+      const canonicalName = canonicalizeCharacterName(trimmedLine);
+      activeCharacter = canonicalName;
+      if (!sceneCharacterDialogues.has(canonicalName)) {
+        sceneCharacterDialogues.set(canonicalName, []);
+        sceneCharacterOrder.push(canonicalName);
       }
       continue;
     }
 
-    if (activeCharacter && isStageDirectionLine(trimmedLine)) {
+    if (activeCharacter && (isStageDirectionLine(trimmedLine) || isDescriptionLine(trimmedLine))) {
       sceneContextLines.push(rawLine.trim());
       activeCharacter = null;
       continue;
     }
 
     const isIndented = indentedLinePattern.test(rawLine);
+    console.log("isIndented:", isIndented,"rawLine:",rawLine);
     if (activeCharacter && isIndented) {
       sceneContextLines.push(rawLine.trim());
       activeCharacter = null;
