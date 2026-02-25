@@ -49,15 +49,39 @@ const isStageDirectionLine = (line: string) => {
 };
 const ageDescriptorPattern = /\((?:\s*\d{1,3}s|\s*\d{1,3} ?years|[^)]*(?:years old|yrs old|year old))\b/i;
 const isDescriptionLine = (line: string) => ageDescriptorPattern.test(line);
+const titleIndicatorPattern = /written\s+by/i;
+const detectTitlePageSkip = (lines: string[]) => {
+  for (let i = 0; i < Math.min(lines.length, 12); i += 1) {
+    const first = lines[i]?.trim();
+    const second = lines[i + 1]?.trim();
+    const third = lines[i + 2]?.trim();
+    if (!first || !second || !third) {
+      continue;
+    }
+    if (titleIndicatorPattern.test(second)) {
+      let j = i + 3;
+      while (j < lines.length && !lines[j].trim()) {
+        j += 1;
+      }
+      return Math.max(j, i + 3);
+    }
+  }
+  return 0;
+};
 
 export function parseScriptToCharInput(text: string) {
   const lines = text.split(/\r?\n/);
+  const skip = detectTitlePageSkip(lines);
+  if (skip > 0) {
+    lines.splice(0, skip);
+  }
   const characterInputs: CharacterInput[] = [];
 
   let sceneContextLines: string[] = [];
   let sceneCharacterDialogues = new Map<string, string[]>();
   let sceneCharacterOrder: string[] = [];
   let activeCharacter: string | null = null;
+  let genre: string | null = null;
   const indentedLinePattern = /^\s{2,}/;
 
   const getSceneContext = () =>
@@ -68,6 +92,7 @@ export function parseScriptToCharInput(text: string) {
     for (const character of sceneCharacterOrder) {
       const dialogue = sceneCharacterDialogues.get(character) ?? [];
       characterInputs.push({
+        genre: genre ?? "",
         character,
         sceneContext,
         dialogue,

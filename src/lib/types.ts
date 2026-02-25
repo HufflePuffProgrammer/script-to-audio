@@ -33,6 +33,7 @@ export type CharacterProfile = {
 };
 
 export type CharacterInput = {
+  genre: string;
   character: string;
   sceneContext: string;
   dialogue: string[];

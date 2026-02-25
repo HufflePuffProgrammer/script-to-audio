@@ -1,14 +1,15 @@
 
 
-interface LLMCharacterInput {
-  character: string;
-  genre: string;
-  profilingSceneLimit: number;
-  sceneContext: string[];
-  sampleDialogue: string[];
-};
+// interface LLMCharacterInput {
+//   character: string;
+//   genre: string;
+//   profilingSceneLimit: number;
+//   sceneContext: string[];
+//   sampleDialogue: string[];
+// };
+import { CharacterInput } from "@/lib/types";
 
-export function buildCharacterProfilingPrompt(llmInput: LLMCharacterInput)
+export function buildCharacterProfilingPrompt(characterInput: CharacterInput)
 {
     console.log("2-Building character profiling prompt");
     return `
@@ -18,12 +19,12 @@ export function buildCharacterProfilingPrompt(llmInput: LLMCharacterInput)
   Do NOT guess information not supported by the dialogue or scene context.
   If information is unclear, mark uncertainty in the "confidence" score.
   ---
-  GENRE: ${llmInput.genre}
-  CHARACTER NAME: ${llmInput.character}
+  GENRE: ${characterInput.genre}
+  CHARACTER NAME: ${characterInput.character}
   SCENE CONTEXT (may include scene headings, geography, description):
-  ${llmInput.sceneContext.join("\n")}
+  ${characterInput.sceneContext +`\n`}
   DIALOGUE SAMPLES:
-  ${llmInput.sampleDialogue.map(line => `- "${line}"`).join("\n")}
+  ${characterInput.dialogue.map(line => `- "${line}"`).join("\n")}
   ---
   Analyze this character and output ONLY this JSON structure:
   {

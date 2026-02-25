@@ -62,7 +62,16 @@ async function getParsedScreenplay() {
       if (!text || typeof text !== "string" || !text.trim()) {
         return NextResponse.json({ error: "No screenplay text provided." }, { status: 400 });
       }
+       //1. parse screenplay to character profile
       const parsedScreenplay = parseScriptToCharInput(text);
+      //2. Build ElevenLabs voice prompt
+      parsedScreenplay.forEach(characterInput => {
+        const profilePrompt = buildCharacterProfilingPrompt(characterInput);
+        console.log("profilePrompt");
+        console.log(profilePrompt);
+      });
+    //const profilePrompt = buildCharacterProfilingPrompt(parsedScreenplay);
+
       return NextResponse.json({ parsedScreenplay });
     } catch (error) {
       console.error("Character builder route error", error);
@@ -71,15 +80,14 @@ async function getParsedScreenplay() {
 
     console.log("Character builder route");
 /*****
-    const parsedScreenplay = await getParsedScreenplay();
-    const characterName="Kyler";
+    //const parsedScreenplay = await getParsedScreenplay();
+    //const characterName="Kyler";
 
  
     //1. Generate character profile
-   const llmInput = buildLLMCharacterInput(parsedScreenplay);
+   //const llmInput = buildLLMCharacterInput(parsedScreenplay);
  
-    //2. Build ElevenLabs voice prompt
-    const profilePrompt = buildCharacterProfilingPrompt(llmInput);
+
 
     //3. Assign ElevenLabs agent
     const profile = await generateCharacterProfile(llmInput,profilePrompt);
