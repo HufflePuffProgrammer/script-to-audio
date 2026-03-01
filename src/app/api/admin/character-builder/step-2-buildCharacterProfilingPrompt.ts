@@ -28,6 +28,7 @@ export function buildCharacterProfilingPrompt(characterInput: CharacterInput)
   ---
   Analyze this character and output ONLY this JSON structure:
   {
+    "name":"",
     "age": "",
     "gender": "",
     "traits": "",
@@ -38,6 +39,7 @@ export function buildCharacterProfilingPrompt(characterInput: CharacterInput)
   }
   
   Where:
+  - "name": the character name .
   - "age": estimated age range based only on speech style
   - "gender": voice-presenting gender (not biological)
   - "traits": personality traits

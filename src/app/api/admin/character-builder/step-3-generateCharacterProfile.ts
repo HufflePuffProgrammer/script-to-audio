@@ -9,7 +9,7 @@ export interface CharacterProfile {
   tone: string;
   confidence?: string;
 }
-  import { LLMCharacterInput } from "./route";
+
 /**
  * Generates a character profile using Anthropic's Claude model.
  * 
@@ -21,10 +21,10 @@ export interface CharacterProfile {
  * handles structured JSON output well.
  */
 export async function generateCharacterProfile(
-  llmInput: LLMCharacterInput,
   profilePrompt: string
 ): Promise<CharacterProfile> {
-  console.log("3-Generating character profile");
+  //console.log("3-Generating character profile");
+  //console.log("profilePrompt:",profilePrompt);
   
   const apiKey = process.env.ANTHROPIC_API_KEY_CHARACTER_PROFILE;
   if (!apiKey) {
@@ -35,7 +35,7 @@ export async function generateCharacterProfile(
 
   // Use Haiku by default (cheap), or Opus for higher quality
   // Set ANTHROPIC_MODEL env var to override (e.g., "claude-3-5-sonnet-20241022")
-  const model = process.env.ANTHROPIC_MODEL || "claude-3-5-haiku-20241022";
+  const model = process.env.ANTHROPIC_MODEL || "claude-haiku-4-5";
 
   try {
     const response = await client.messages.create({
@@ -50,11 +50,12 @@ export async function generateCharacterProfile(
         },
       ],
     });
+   
 
     const jsonText = response.content[0].type === "text" 
       ? response.content[0].text.trim()
       : "";
-
+      //console.log("response:",jsonText);
     // Remove markdown code blocks if present
     const cleanedText = jsonText.replace(/^```json\n?/g, "").replace(/\n?```$/g, "").trim();
 
@@ -64,6 +65,7 @@ export async function generateCharacterProfile(
       if (!parsed.age || !parsed.gender || !parsed.traits || !parsed.voiceStyle || !parsed.speechPattern || !parsed.tone) {
         throw new Error("LLM output missing required character profile fields");
       }
+      console.log("parsed:",parsed)
       return parsed;
     } catch (err) {
       console.error("Failed to parse LLM JSON:", err);

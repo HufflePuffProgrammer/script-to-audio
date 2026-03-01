@@ -64,13 +64,18 @@ async function getParsedScreenplay() {
       }
        //1. parse screenplay to character profile
       const parsedScreenplay = parseScriptToCharInput(text);
-      //2. Build ElevenLabs voice prompt
+      //2. Build ElevenLabs Character Profile prompt
       parsedScreenplay.forEach(characterInput => {
         const profilePrompt = buildCharacterProfilingPrompt(characterInput);
-        console.log("profilePrompt");
-        console.log(profilePrompt);
+        //3. Assign ElevenLabs agent
+        const profile =  generateCharacterProfile(profilePrompt);
+        console.log("PROFILE:");
+        console.log(profile);
+        //4. Voice Prompt
+        const voicePrompt = buildVoicePrompt(characterInput.character, profile, characterInput.dialogue);
+
       });
-    //const profilePrompt = buildCharacterProfilingPrompt(parsedScreenplay);
+
 
       return NextResponse.json({ parsedScreenplay });
     } catch (error) {
@@ -89,11 +94,8 @@ async function getParsedScreenplay() {
  
 
 
-    //3. Assign ElevenLabs agent
-    const profile = await generateCharacterProfile(llmInput,profilePrompt);
   
-    //4. Voice Prompt
-    const voicePrompt = buildVoicePrompt(characterName, profile, llmInput.sampleDialogue);
+  
 
 
     //5. Store audio in Supabase
