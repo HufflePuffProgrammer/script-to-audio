@@ -24,6 +24,8 @@ export async function buildVoiceRankingPrompt(characterProfile : CharacterProfil
   Return:
   {
     "best_voice_id": "",
+    "description": "",
+    "labels": "",
     "reason": ""
   }
   `;

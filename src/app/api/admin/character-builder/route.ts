@@ -82,7 +82,12 @@ async function getParsedScreenplay() {
         // step-5-1-AssignElevenLabsAgent -Upsert into DB
         // step-5-2 VoiceRankingPrompt
         const voiceRankingPrompt = await buildVoiceRankingPrompt(profile, availableVoices);
-        console.log("voiceRankingPrompt", voiceRankingPrompt);
+        //console.log("voiceRankingPrompt", voiceRankingPrompt);
+            //5-3 Rank Voices with Claude
+        const bestRankedVoice = await rankVoicesWithClaude(profile, availableVoices, voiceRankingPrompt);
+        console.log("bestRankedVoice");
+        console.log(bestRankedVoice);
+        
       }
 
 
