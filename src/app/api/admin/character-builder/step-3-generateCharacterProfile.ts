@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 
 export interface CharacterProfile {
+  name: string;
   age: string;
   gender: string;
   traits: string;

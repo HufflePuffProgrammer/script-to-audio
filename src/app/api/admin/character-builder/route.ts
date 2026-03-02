@@ -62,22 +62,31 @@ async function getParsedScreenplay() {
       if (!text || typeof text !== "string" || !text.trim()) {
         return NextResponse.json({ error: "No screenplay text provided." }, { status: 400 });
       }
+      //5-1 Get Available Voices
+      const availableVoices = await getAvailableVoices();
        //1. parse screenplay to character profile
       const parsedScreenplay = parseScriptToCharInput(text);
       //2. Build ElevenLabs Character Profile prompt
-      parsedScreenplay.forEach(characterInput => {
+      const profiles = [];
+      for (const characterInput of parsedScreenplay) {
         const profilePrompt = buildCharacterProfilingPrompt(characterInput);
-        //3. Assign ElevenLabs agent
-        const profile =  generateCharacterProfile(profilePrompt);
-        console.log("PROFILE:");
-        console.log(profile);
-        //4. Voice Prompt
-        const voicePrompt = buildVoicePrompt(characterInput.character, profile, characterInput.dialogue);
+        const profile = await generateCharacterProfile(profilePrompt);
+        console.log("PROFILE:", profile);
+        const voicePrompt = buildVoicePrompt(
+          characterInput.character,
+          profile,
+          characterInput.dialogue
+        );
+        console.log("Voice prompt:", voicePrompt);
+        profiles.push(profile);
+        // step-5-1-AssignElevenLabsAgent -Upsert into DB
+        // step-5-2 VoiceRankingPrompt
+        const voiceRankingPrompt = await buildVoiceRankingPrompt(profile, availableVoices);
+        console.log("voiceRankingPrompt", voiceRankingPrompt);
+      }
 
-      });
 
-
-      return NextResponse.json({ parsedScreenplay });
+      return NextResponse.json({ parsedScreenplay, profiles });
     } catch (error) {
       console.error("Character builder route error", error);
       return NextResponse.json({ error: "Failed to parse screenplay." }, { status: 500 });

@@ -5,7 +5,7 @@ export function buildVoicePrompt(
   profile: CharacterProfile,
   sampleDialogue: string[] = []
 ): string {
-  
+
   return `
   Character Name: ${characterName}
   
