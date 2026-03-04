@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useScriptText } from "@/lib/useScriptText";
 import { ChangeEvent, FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
 
 const steps = ["Paste Script", "build LLM Char Input", "build Char Prompt ", "Generate complete audio"];
 
@@ -29,6 +30,7 @@ const Progress = ({ activeIndex }: { activeIndex: number }) => {
 };
 
 export default function PasteStep() {
+  const router = useRouter();
   const { text, setText, clear, hasText, characters } = useScriptText();
   const [status, setStatus] = useState("");
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
@@ -39,26 +41,25 @@ export default function PasteStep() {
     setStatus("Submitting...");
     console.log("Text:", text);
       try {
-        const response = await fetch("/api/admin/character-builder", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            text,
-          }),
-        });
+      const response = await fetch("/api/admin/character-builder", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text,
+        }),
+      });
 
         if (!response.ok) {
           throw new Error("Request failed");
         }
 
-        const data = await response.json();
+      const data = await response.json();
 
-        console.log("Server response:", data);
-
-        setStatus("Saved!");
-        setText(""); // clear form
+      console.log("Server response:", data);
+      window.sessionStorage.setItem("characterBuilderResults", JSON.stringify(data));
+      router.push("/admin/character-builder/steps/step-3-charprofile");
       } catch (error) {
         console.error(error);
         setStatus("Error submitting form");

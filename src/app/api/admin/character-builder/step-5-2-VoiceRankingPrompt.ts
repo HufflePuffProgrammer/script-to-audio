@@ -17,7 +17,7 @@ export async function buildVoiceRankingPrompt(characterProfile : CharacterProfil
   
   Rules:
   - Choose the voice that best matches tone, personality, and vocal style
-  - Gender mismatch is allowed ONLY if it improves performance
+  - Gender mismatch is not allowed 
   - Do not invent new voices
   - Output ONLY valid JSON
   

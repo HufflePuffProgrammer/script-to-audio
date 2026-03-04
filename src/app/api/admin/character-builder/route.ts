@@ -9,6 +9,7 @@ import {rankVoicesWithClaude} from "./step-5-3-RankVoicesWithClaude";
 import {assignVoiceToCharacter} from "./step-5-4-AssignVoiceToCharacter";
 import {AssignElevenLabsAgent} from "./step-5-1-AssignElevenLabsAgent";
 import { AvailableVoices, getAvailableVoices } from "../utils";
+import { profile } from "node:console";
 
 
 
@@ -68,8 +69,11 @@ async function getParsedScreenplay() {
       const parsedScreenplay = parseScriptToCharInput(text);
       //2. Build ElevenLabs Character Profile prompt
       const profiles = [];
+      const bestRankedVoices = [];
+      const profilePrompts = [];
       for (const characterInput of parsedScreenplay) {
         const profilePrompt = buildCharacterProfilingPrompt(characterInput);
+        profilePrompts.push(profilePrompt);
         const profile = await generateCharacterProfile(profilePrompt);
         console.log("PROFILE:", profile);
         const voicePrompt = buildVoicePrompt(
@@ -87,11 +91,12 @@ async function getParsedScreenplay() {
         const bestRankedVoice = await rankVoicesWithClaude(profile, availableVoices, voiceRankingPrompt);
         console.log("bestRankedVoice");
         console.log(bestRankedVoice);
+        bestRankedVoices.push(bestRankedVoice);
         
       }
 
 
-      return NextResponse.json({ parsedScreenplay, profiles });
+      return NextResponse.json({profiles,bestRankedVoices, profilePrompts });
     } catch (error) {
       console.error("Character builder route error", error);
       return NextResponse.json({ error: "Failed to parse screenplay." }, { status: 500 });
