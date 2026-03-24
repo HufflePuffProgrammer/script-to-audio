@@ -65,7 +65,8 @@ async function getParsedScreenplay() {
       }
       //5-1 Get Available Voices
       const availableVoices = await getAvailableVoices();
-       //1. parse screenplay to character profile
+      
+      //1. parse screenplay to character profile
       const parsedScreenplay = parseScriptToCharInput(text);
       //2. Build ElevenLabs Character Profile prompt
       const profiles = [];
@@ -91,6 +92,7 @@ async function getParsedScreenplay() {
         const bestRankedVoice = await rankVoicesWithClaude(profile, availableVoices, voiceRankingPrompt);
         console.log("bestRankedVoice");
         console.log(bestRankedVoice);
+        console.log("availableVoices", availableVoices);
         bestRankedVoices.push(bestRankedVoice);
         
       }
