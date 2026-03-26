@@ -63,11 +63,13 @@ async function getParsedScreenplay() {
       if (!text || typeof text !== "string" || !text.trim()) {
         return NextResponse.json({ error: "No screenplay text provided." }, { status: 400 });
       }
+      console.log("api character builder route");
       //5-1 Get Available Voices
       const availableVoices = await getAvailableVoices();
       
       //1. parse screenplay to character profile
       const parsedScreenplay = parseScriptToCharInput(text);
+      console.log("parsedScreenplay", parsedScreenplay);
       //2. Build ElevenLabs Character Profile prompt
       const profiles = [];
       const bestRankedVoices = [];
@@ -82,7 +84,7 @@ async function getParsedScreenplay() {
           profile,
           characterInput.dialogue
         );
-        console.log("Voice prompt:", voicePrompt);
+        //console.log("Voice prompt:", voicePrompt);
         profiles.push(profile);
         // step-5-1-AssignElevenLabsAgent -Upsert into DB
         // step-5-2 VoiceRankingPrompt
@@ -90,9 +92,9 @@ async function getParsedScreenplay() {
         //console.log("voiceRankingPrompt", voiceRankingPrompt);
             //5-3 Rank Voices with Claude
         const bestRankedVoice = await rankVoicesWithClaude(profile, availableVoices, voiceRankingPrompt);
-        console.log("bestRankedVoice");
-        console.log(bestRankedVoice);
-        console.log("availableVoices", availableVoices);
+        //console.log("bestRankedVoice");
+        //console.log(bestRankedVoice);
+        
         bestRankedVoices.push(bestRankedVoice);
         
       }

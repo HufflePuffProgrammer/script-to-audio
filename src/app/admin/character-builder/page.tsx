@@ -192,12 +192,12 @@ export default function PasteStep() {
                 Build Character
               </button>
               <Link
-                href="/admin/steps/build-character-input"
+                href="/admin/steps/parse-screenplay"
                 className="rounded-full bg-[#f9cf00] px-4 py-2 text-sm font-semibold text-[#1b1b1b] shadow-md transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
                 aria-disabled={!hasText}
                 tabIndex={hasText ? 0 : -1}
               >
-                Next: Build Character input
+                Next: Parse Screenplay
               </Link>
             </div>
           </div>

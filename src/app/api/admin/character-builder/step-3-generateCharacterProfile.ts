@@ -24,8 +24,7 @@ export interface CharacterProfile {
 export async function generateCharacterProfile(
   profilePrompt: string
 ): Promise<CharacterProfile> {
-  //console.log("3-Generating character profile");
-  //console.log("profilePrompt:",profilePrompt);
+
   
   const apiKey = process.env.ANTHROPIC_API_KEY_CHARACTER_PROFILE;
   if (!apiKey) {
@@ -56,7 +55,7 @@ export async function generateCharacterProfile(
     const jsonText = response.content[0].type === "text" 
       ? response.content[0].text.trim()
       : "";
-      //console.log("response:",jsonText);
+ 
     // Remove markdown code blocks if present
     const cleanedText = jsonText.replace(/^```json\n?/g, "").replace(/\n?```$/g, "").trim();
 
@@ -66,7 +65,7 @@ export async function generateCharacterProfile(
       if (!parsed.age || !parsed.gender || !parsed.traits || !parsed.voiceStyle || !parsed.speechPattern || !parsed.tone) {
         throw new Error("LLM output missing required character profile fields");
       }
-      console.log("parsed:",parsed)
+
       return parsed;
     } catch (err) {
       console.error("Failed to parse LLM JSON:", err);

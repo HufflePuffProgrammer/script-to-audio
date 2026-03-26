@@ -67,15 +67,15 @@ let isNewCharacter: boolean = false;
       console.log("currentDialogue:",currentDialogue);
   
     }
-    // currentScene.dialogue.push({
-    //   character,
-    //   text: line,
-    //   isNarration,
-    // });
-    // if (character !== narratorLabel && !currentScene.characters.includes(character)) {
-    //   currentScene.characters.push(character);
-    // }
-    //console.log("line",line);
+     currentScene.dialogue.push({
+       character,
+       text: line,
+       isNarration,
+     });
+     if (character !== narratorLabel && !currentScene.characters.includes(character)) {
+       currentScene.characters.push(character);
+     }
+    console.log("line",line);
   });
 
 
