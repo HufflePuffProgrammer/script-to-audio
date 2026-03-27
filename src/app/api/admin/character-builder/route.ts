@@ -11,147 +11,62 @@ import {AssignElevenLabsAgent} from "./step-5-1-AssignElevenLabsAgent";
 import { AvailableVoices, getAvailableVoices } from "../utils";
 import { profile } from "node:console";
 
+import { CharacterVoiceIds } from "@/lib/types";
 
-
-export interface LLMCharacterInput {
-    character: string;
-    genre: string;
-    profilingSceneLimit: number;
-    sceneContext: string[];
-    sampleDialogue: string[];
-  };
-  interface ReasonOutput{
-    best_voice_id: string;
-    reason: string;
-  };
-//   export interface CharacterProfile {
-//     age: string;
-//     gender: string;
-//     traits: string;
-//     voiceStyle: string;
-//     speechPattern: string;
-//     tone: string;
-//     confidence?: string;
-//   };
-//   export interface AvailableVoices{
-//     voice_id: string;
-//     description: string;
-//     labels: string;
-//   }[]=[{
-//     voice_id: "",
-//     description: "",
-//     labels: "",
-//   }];
-  
-async function getParsedScreenplay() {
-    console.log("Getting parsed screenplay");
-    return {
-        name: "John Doe",
-        age: 30,
-        gender: "Male",
-    }
-}
-/**
- * Fetch all ElevenLabs voices
- */
-
-  
-// export async function GET() {
   export async function POST(request: Request) {
     try {
       const { text } = await request.json();
       if (!text || typeof text !== "string" || !text.trim()) {
         return NextResponse.json({ error: "No screenplay text provided." }, { status: 400 });
       }
-      console.log("api character builder route");
+      //5. Check if audio exists in Supabase
+      //const audioUrl = await AssignElevenLabsAgent(characterName,voicePrompt);
+
       //5-1 Get Available Voices
       const availableVoices = await getAvailableVoices();
       
       //1. parse screenplay to character profile
       const parsedScreenplay = parseScriptToCharInput(text);
-      console.log("parsedScreenplay", parsedScreenplay);
+
       //2. Build ElevenLabs Character Profile prompt
       const profiles = [];
-      const bestRankedVoices = [];
+      const characterVoiceIds: CharacterVoiceIds[] = [];
       const profilePrompts = [];
       for (const characterInput of parsedScreenplay) {
         const profilePrompt = buildCharacterProfilingPrompt(characterInput);
         profilePrompts.push(profilePrompt);
         const profile = await generateCharacterProfile(profilePrompt);
-        console.log("PROFILE:", profile);
+
         const voicePrompt = buildVoicePrompt(
           characterInput.character,
           profile,
           characterInput.dialogue
         );
-        //console.log("Voice prompt:", voicePrompt);
+    
         profiles.push(profile);
         // step-5-1-AssignElevenLabsAgent -Upsert into DB
+        
         // step-5-2 VoiceRankingPrompt
         const voiceRankingPrompt = await buildVoiceRankingPrompt(profile, availableVoices);
-        //console.log("voiceRankingPrompt", voiceRankingPrompt);
-            //5-3 Rank Voices with Claude
+ 
+        //5-3 Rank Voices with Claude
         const bestRankedVoice = await rankVoicesWithClaude(profile, availableVoices, voiceRankingPrompt);
-        //console.log("bestRankedVoice");
-        //console.log(bestRankedVoice);
-        
-        bestRankedVoices.push(bestRankedVoice);
-        
+ 
+        characterVoiceIds.push({
+          character_name: characterInput.character, 
+          voice_id: bestRankedVoice.best_voice_id, 
+          description: bestRankedVoice.description, 
+          labels: bestRankedVoice.labels, 
+          reason: bestRankedVoice.reason}
+
+        );
+        //6- Assign Voice to Character. Upsert to database
+        //const voiceId = await assignVoiceToCharacter(characterName, profile, bestRankedVoice.best_voice_id, bestRankedVoice.reason);
+     
       }
-
-
-      return NextResponse.json({profiles,bestRankedVoices, profilePrompts });
+      return NextResponse.json({profiles,characterVoiceIds, profilePrompts });
     } catch (error) {
       console.error("Character builder route error", error);
       return NextResponse.json({ error: "Failed to parse screenplay." }, { status: 500 });
     }
-
-    console.log("Character builder route");
-/*****
-    //const parsedScreenplay = await getParsedScreenplay();
-    //const characterName="Kyler";
-
- 
-    //1. Generate character profile
-   //const llmInput = buildLLMCharacterInput(parsedScreenplay);
- 
-
-
-  
-  
-
-
-    //5. Store audio in Supabase
-    //TODO: Implement this
-    //const audioUrl = await AssignElevenLabsAgent(characterName,voicePrompt);
-    //console.log("audioUrl");
-    //console.log(audioUrl);
-
-    //5-1 Get Available Voices
-    const availableVoices = await getAvailableVoices();
-
-    //5-2 Voice Ranking Prompt
-    const voiceRankingPrompt = await buildVoiceRankingPrompt(profile, availableVoices);
-
-    //5-3 Rank Voices with Claude
-    const bestRankedVoice = await rankVoicesWithClaude(profile, availableVoices, voiceRankingPrompt);
-
-    console.log("bestRankedVoice");
-    console.log(bestRankedVoice);
-****/
-    //6- Assign Voice to Character. Upsert to database
-   //const voiceId = await assignVoiceToCharacter(characterName, profile, bestRankedVoice.best_voice_id, bestRankedVoice.reason);
-  // console.log("voiceId");
-  // console.log(voiceId);
-     return NextResponse.json({ 
-      ok: true 
-    });
-
-    //  NextResponse.json({
-    //   scenes: parsed.scenes,
-    //   sceneCount: parsed.sceneCount,
-    //   characterFirstScene: parsed.characterFirstScene,
-    //   screenplay_id: screenplayId,
-    // });
-
 }

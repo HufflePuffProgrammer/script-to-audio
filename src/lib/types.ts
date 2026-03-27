@@ -50,3 +50,12 @@ export type CharacterInput = {
 };
 export type AudioStatus = "idle" | "generating" | "ready" | "error";
 
+export type CharacterVoiceIds = [
+  {
+    character_name: string;
+    voice_id: string;
+    description: string;
+    labels: string;
+    reason: string;
+  }
+]
