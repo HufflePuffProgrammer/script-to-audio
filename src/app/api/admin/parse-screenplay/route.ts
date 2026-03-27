@@ -48,7 +48,7 @@ export async function POST(request: Request) {
       }
     }
 */
-console.dir("parsed", parsed);
+
     // return NextResponse.json({
     //   scenes: parsed.scenes,
     //   sceneCount: parsed.sceneCount,

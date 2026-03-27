@@ -1,6 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import {
+  buildNormalizedScriptText,
+  mapPdfJsItems,
+  normalizePdfLines,
+} from "@/lib/normalizePdfLines";
 import { useScriptText } from "@/lib/useScriptText";
 import { ChangeEvent, FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -83,11 +88,17 @@ export default function PasteStep() {
       pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
       const document = await pdfjs.getDocument({ data: arrayBuffer }).promise;
       let extractedText = "";
+      let normalizedExtractedText = "";
      //console.log("document.numPages:",document.numPages);
 
       for (let pageIndex = 1; pageIndex <= document.numPages; pageIndex += 1) {
         const page = await document.getPage(pageIndex);
         const content = await page.getTextContent({ normalizeWhitespace: false, disableCombineTextItems: true });
+        const positionedItems = mapPdfJsItems(
+          content.items as Array<{ str?: string; transform?: number[] }>,
+        );
+        const normalizedLines = normalizePdfLines(positionedItems);
+        const normalizedPageText = buildNormalizedScriptText(normalizedLines);
         const pageText = (() => {
           const buffer: string[] = [];
           let prevY: number | null = null;
@@ -110,12 +121,15 @@ export default function PasteStep() {
           });
           return buffer.join("");
         })();
+        console.log("normalizedLines:", pageIndex, normalizedLines);
+        console.log("normalizedPageText:", pageIndex, JSON.stringify(normalizedPageText));
         console.log("pageText:", JSON.stringify(pageText));
         extractedText += `${pageText}\n`;
+        normalizedExtractedText += `${normalizedPageText}\n`;
       }
       console.log("extractedText:",extractedText);
-      //setText(extractedText.trim());
-      setText(extractedText);
+      console.log("normalizedExtractedText:", normalizedExtractedText);
+      setText(normalizedExtractedText);
       setUploadStatus("PDF text extracted successfully.");
     } catch (error) {
       console.error("Failed to parse PDF", error);

@@ -16,11 +16,21 @@ export type Scene = {
   summary?: string;
 };
 
+export type ScreenplayCharacteristics = {
+  genre?: string;
+  tone?: string;
+  setting?: string;
+  timePeriod?: string;
+  audience?: string;
+  themes?: string[];
+};
+
 export type Screenplay = {
   id: string;
   title: string;
   sceneCount: number;
   scenes: Scene[];
+  characteristics?: ScreenplayCharacteristics;
 };
 
 export type CharacterProfile = {

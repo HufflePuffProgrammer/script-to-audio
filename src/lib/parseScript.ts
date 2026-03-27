@@ -3,44 +3,138 @@ import { Scene } from "./types";
 
 const headingPattern = /^(INT\.|EXT\.)/i;
 const characterPattern = /^[A-Z0-9\s.'()\-]{2,40}$/;
+const isCharacterLine = (line: string) =>
+  characterPattern.test(line) && line === line.toUpperCase();
+
+const canonicalizeCharacterName = (name: string) =>
+  name.replace(/\(O\.?S\.?\)/gi, "").trim();
+
+const stageDirectionPattern = /^(CLOSE ON|ANGLE ON|CUT TO|PAN TO|DISSOLVE TO|FADE (IN|OUT)|CAMERA|A VOICE)/i;
+const stageDirectionVerbs = [
+  "opens",
+  "bursts",
+  "walks",
+  "runs",
+  "stands",
+  "sits",
+  "comes",
+  "goes",
+  "arrives",
+  "enters",
+  "exits",
+  "rushes",
+  "throws",
+  "carries",
+  "leans",
+  "holds",
+  "grabs",
+  "points",
+  "shouts",
+  "whispers",
+  "smiles",
+  "laughs",
+  "stares",
+  "gazes",
+  "falls",
+  "spins",
+  "flips",
+  "opens",
+  "slams",
+  "breaks",
+];
+const isStageDirectionLine = (line: string) => {
+  const lowerLine = line.toLowerCase();
+  return (
+    stageDirectionPattern.test(line) ||
+    stageDirectionVerbs.some((verb) => lowerLine.includes(verb))
+  );
+};
+const ageDescriptorPattern = /\((?:\s*\d{1,3}s|\s*\d{1,3} ?years|[^)]*(?:years old|yrs old|year old))\b/i;
+const isDescriptionLine = (line: string) => ageDescriptorPattern.test(line);
+const indentedLinePattern = /^\s{2,}/;
+const titlePageMarker = "[[TITLE_PAGE]]";
+const narratorOnlyPattern = /^FADE IN:$/i;
+
 
 const makeId = (prefix: string, index: number) =>
   `${prefix}-${index}-${Math.random().toString(16).slice(2, 8)}`;
 
+
 export function parseScript(text: string) {
-  const lines = text
-    .split(/\r?\n/)
-    .map((l) => l.trim())
-    .filter(Boolean);
+  const lines = text.split(/\r?\n/);
 
   const scenes: Scene[] = [];
   let currentScene: Scene | null = null;
-  let currentCharacter: string | null = null;
-let currentDialogue: string = "";
-let isNewCharacter: boolean = false;
+  let activeCharacter: string | null = null;
 
-  lines.forEach((line) => {
+  
+  for (const rawLine of lines) {
+    const trimmed = rawLine.trim();
+    const leadingWhitespace = rawLine.match(/^(\s*)/)?.[1].length ?? 0;
 
-    if (headingPattern.test(line)) {
+    if (!trimmed) {
+      activeCharacter = null;
+      continue;
+    }
+
+    if (trimmed === titlePageMarker) {
+      activeCharacter = null;
+      continue;
+    }
+
+    if (narratorOnlyPattern.test(trimmed)) {
+      if (!currentScene) {
+        currentScene = {
+          id: makeId("scene", scenes.length + 1),
+          sceneNumber: scenes.length + 1,
+          heading: "SCENE",
+          characters: [],
+          dialogue: [],
+        };
+      }
+
+      const lastDialogue = currentScene.dialogue[currentScene.dialogue.length - 1];
+      if (lastDialogue?.character === narratorLabel && lastDialogue.isNarration) {
+        lastDialogue.text = `${lastDialogue.text} ${trimmed}`.trim();
+      } else {
+        currentScene.dialogue.push({
+          character: narratorLabel,
+          text: trimmed,
+          isNarration: true,
+        });
+      }
+      activeCharacter = null;
+      continue;
+    }
+
+    if (headingPattern.test(trimmed)) {
       if (currentScene) scenes.push(currentScene);
       currentScene = {
         id: makeId("scene", scenes.length + 1),
         sceneNumber: scenes.length + 1,
-        heading: line,
+        heading: trimmed,
         characters: [],
         dialogue: [],
       };
-      currentCharacter = null;
-      return;
+      activeCharacter = null;
+      continue;
     }
-//console.log("line:",line);
-    if (characterPattern.test(line) && line === line.toUpperCase()) {
-        console.log("push scene");
-        isNewCharacter = true;
-      
-        currentCharacter = line;
-      return;
+
+    const isStageOrDescription =
+      isStageDirectionLine(trimmed) || isDescriptionLine(trimmed);
+    if (isStageOrDescription) {
+      activeCharacter = null;
     }
+
+    const canonicalName = isCharacterLine(trimmed)
+      ? canonicalizeCharacterName(trimmed)
+      : null;
+
+    if (!isStageOrDescription && canonicalName) {
+      activeCharacter = canonicalName;
+      continue;
+    }
+
 
     if (!currentScene) {
       currentScene = {
@@ -52,33 +146,40 @@ let isNewCharacter: boolean = false;
       };
     }
 
-    const character = currentCharacter ?? narratorLabel;
-    const isNarration = !currentCharacter;
-    if (isNewCharacter) {
-      console.log("push scene",currentCharacter,currentDialogue,"line:",line);
-      isNewCharacter = false;
-      currentDialogue = "";
-    }
-    else{
-      console.log("join dialogue:");
-      console.log("currentCharacter:",currentCharacter);
-      console.log("line:",line);
-      currentDialogue = currentDialogue + " " + line;
-      console.log("currentDialogue:",currentDialogue);
-  
-    }
-     currentScene.dialogue.push({
-       character,
-       text: line,
-       isNarration,
-     });
-     if (character !== narratorLabel && !currentScene.characters.includes(character)) {
-       currentScene.characters.push(character);
-     }
-    console.log("line",line);
-  });
+    const isIndented = indentedLinePattern.test(rawLine);
 
+    const endsWithColon = trimmed.endsWith(":");
 
+    let character = narratorLabel;
+    let isNarration = true;
+
+    if (activeCharacter && !isStageOrDescription && isIndented && !endsWithColon) {
+      character = activeCharacter;
+      isNarration = false;
+    } else {
+      activeCharacter = null;
+    }
+
+    const lastDialogue = currentScene.dialogue[currentScene.dialogue.length - 1];
+    const shouldAppend =
+      lastDialogue &&
+      lastDialogue.character === character &&
+      lastDialogue.isNarration === isNarration;
+
+    if (shouldAppend) {
+      lastDialogue.text = `${lastDialogue.text} ${trimmed}`.trim();
+    } else {
+      currentScene.dialogue.push({
+        character,
+        text: trimmed,
+        isNarration,
+      });
+    }
+
+    if (character !== narratorLabel && !currentScene.characters.includes(character)) {
+      currentScene.characters.push(character);
+    }
+  }
 
   if (currentScene) scenes.push(currentScene);
 
@@ -91,17 +192,26 @@ let isNewCharacter: boolean = false;
       }
     });
   });
-  console.log("scenes");
-  scenes.forEach((scene)=>{
-  console.log(scene.characters)
-console.log(scene.dialogue)
-});
-console.log("characterFirstScene");
-console.log(characterFirstScene);
+
+  scenes.forEach((scene) => {
+    scene.dialogue.forEach((line) => {
+      console.log("character:", line.character, "text:",line.text, "isNarration:", line.isNarration);
+    });
+  });
+
   return {
     scenes,
     sceneCount: scenes.length,
     characterFirstScene,
+    // Future screenplay-level metadata can live here once we infer it
+    // from the title page, PDF layout, or an LLM enrichment step.
+    // characteristics: {
+    //   genre: undefined,
+    //   tone: undefined,
+    //   setting: undefined,
+    //   timePeriod: undefined,
+    //   audience: undefined,
+    //   themes: [],
+    // },
   };
 }
-
