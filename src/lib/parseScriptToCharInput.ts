@@ -1,5 +1,5 @@
 import { characterPattern, headingPattern } from "./constants";
-import { CharacterInput } from "./types";
+import { CharacterInput,stageDirectionPattern,stageDirectionVerbs } from "./types";
 
 const isCharacterLine = (line: string) =>
   characterPattern.test(line) && line === line.toUpperCase();
@@ -7,49 +7,18 @@ const isCharacterLine = (line: string) =>
 const canonicalizeCharacterName = (name: string) =>
   name.replace(/\(O\.?S\.?\)/gi, "").trim();
 
-const stageDirectionPattern = /^(CLOSE ON|ANGLE ON|CUT TO|PAN TO|DISSOLVE TO|FADE (IN|OUT)|CAMERA|A VOICE)/i;
-const stageDirectionVerbs = [
-  "opens",
-  "bursts",
-  "walks",
-  "runs",
-  "stands",
-  "sits",
-  "comes",
-  "goes",
-  "arrives",
-  "enters",
-  "exits",
-  "rushes",
-  "throws",
-  "carries",
-  "leans",
-  "holds",
-  "grabs",
-  "points",
-  "shouts",
-  "whispers",
-  "smiles",
-  "laughs",
-  "stares",
-  "gazes",
-  "falls",
-  "spins",
-  "flips",
-  "opens",
-  "slams",
-  "breaks",
-];
+
 const isStageDirectionLine = (line: string) => {
   const lowerLine = line.toLowerCase();
   return (
     stageDirectionPattern.test(line) ||
-    stageDirectionVerbs.some((verb) => lowerLine.includes(verb))
+    stageDirectionVerbs.some((verb: string) => lowerLine.includes(verb))
   );
 };
 const ageDescriptorPattern = /\((?:\s*\d{1,3}s|\s*\d{1,3} ?years|[^)]*(?:years old|yrs old|year old))\b/i;
 const isDescriptionLine = (line: string) => ageDescriptorPattern.test(line);
 const titleIndicatorPattern = /written\s+by/i;
+
 const detectTitlePageSkip = (lines: string[]) => {
   for (let i = 0; i < Math.min(lines.length, 12); i += 1) {
     const first = lines[i]?.trim();
