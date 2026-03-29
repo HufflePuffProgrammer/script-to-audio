@@ -1,47 +1,13 @@
-import { narratorLabel } from "./constants";
+import { narratorLabel,stageDirectionVerbs, stageDirectionPattern, titlePageMarker, headingPattern, characterPattern, ageDescriptorPattern ,narratorOnlyPattern, indentedLinePattern} from "./constants";
 import { Scene } from "./types";
 
-const headingPattern = /^(INT\.|EXT\.)/i;
-const characterPattern = /^[A-Z0-9\s.'()\-]{2,40}$/;
+
 const isCharacterLine = (line: string) =>
   characterPattern.test(line) && line === line.toUpperCase();
 
 const canonicalizeCharacterName = (name: string) =>
-  name.replace(/\(O\.?S\.?\)/gi, "").trim();
+  name.replace(/\((?:O\.?C\.?|V\.?O\.?|O\.?S\.?)\)/gi, "").trim();
 
-const stageDirectionPattern = /^(CLOSE ON|ANGLE ON|CUT TO|PAN TO|DISSOLVE TO|FADE (IN|OUT)|CAMERA|A VOICE)/i;
-const stageDirectionVerbs = [
-  "opens",
-  "bursts",
-  "walks",
-  "runs",
-  "stands",
-  "sits",
-  "comes",
-  "goes",
-  "arrives",
-  "enters",
-  "exits",
-  "rushes",
-  "throws",
-  "carries",
-  "leans",
-  "holds",
-  "grabs",
-  "points",
-  "shouts",
-  "whispers",
-  "smiles",
-  "laughs",
-  "stares",
-  "gazes",
-  "falls",
-  "spins",
-  "flips",
-  "opens",
-  "slams",
-  "breaks",
-];
 const isStageDirectionLine = (line: string) => {
   const lowerLine = line.toLowerCase();
   return (
@@ -49,12 +15,8 @@ const isStageDirectionLine = (line: string) => {
     stageDirectionVerbs.some((verb) => lowerLine.includes(verb))
   );
 };
-const ageDescriptorPattern = /\((?:\s*\d{1,3}s|\s*\d{1,3} ?years|[^)]*(?:years old|yrs old|year old))\b/i;
-const isDescriptionLine = (line: string) => ageDescriptorPattern.test(line);
-const indentedLinePattern = /^\s{2,}/;
-const titlePageMarker = "[[TITLE_PAGE]]";
-const narratorOnlyPattern = /^FADE IN:$/i;
 
+const isDescriptionLine = (line: string) => ageDescriptorPattern.test(line);
 
 const makeId = (prefix: string, index: number) =>
   `${prefix}-${index}-${Math.random().toString(16).slice(2, 8)}`;
@@ -194,6 +156,11 @@ export function parseScript(text: string) {
   });
 
   scenes.forEach((scene) => {
+    console.log("scene:", scene.heading);
+    console.log("id:", scene.id);
+    console.log("sceneNumber:", scene.sceneNumber);
+
+
     scene.dialogue.forEach((line) => {
       console.log("character:", line.character, "text:",line.text, "isNarration:", line.isNarration);
     });
