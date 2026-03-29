@@ -1,11 +1,12 @@
-import { characterPattern, headingPattern } from "./constants";
-import { CharacterInput,stageDirectionPattern,stageDirectionVerbs } from "./types";
+import { characterPattern, headingPattern, stageDirectionPattern, stageDirectionVerbs } from "./constants";
+import { CharacterInput } from "./types";
+
 
 const isCharacterLine = (line: string) =>
   characterPattern.test(line) && line === line.toUpperCase();
 
 const canonicalizeCharacterName = (name: string) =>
-  name.replace(/\(O\.?S\.?\)/gi, "").trim();
+  name.replace(/\((?:O\.?C\.?|V\.?O\.?|O\.?S\.?)\)/gi, "").trim();
 
 
 const isStageDirectionLine = (line: string) => {

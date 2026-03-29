@@ -13,15 +13,19 @@ export type NormalizedPdfLine = {
   text: string;
   xStart: number;
   y: number;
-  indentBucket: "left" | "dialogue" | "centered";
-  roleHint: "narration" | "dialogue" | "characterCue";
+  indentBucket: "left" | "dialogue" | "centered" | "right";
+  roleHint: "narration" | "dialogue" | "characterCue" | "pageNumber";
 };
 
 const uppercaseLinePattern = /^[A-Z0-9\s.'()\-]{2,40}$/;
+const pageNumberPattern = /^\d+$/;
 const titleIndicatorPattern = /written\s+by/i;
 export const titlePageMarker = "[[TITLE_PAGE]]";
 
 const classifyIndentBucket = (xStart: number) => {
+  if (xStart >= 500) {
+    return "right" as const;
+  }
   if (xStart >= 220) {
     return "centered" as const;
   }
@@ -31,7 +35,16 @@ const classifyIndentBucket = (xStart: number) => {
   return "left" as const;
 };
 
-const classifyRoleHint = (text: string, indentBucket: NormalizedPdfLine["indentBucket"]) => {
+const classifyRoleHint = (
+  text: string,
+  indentBucket: NormalizedPdfLine["indentBucket"],
+  y: number,
+  topY: number,
+) => {
+  const isNearTopOfPage = topY - y <= 72;
+  if (indentBucket === "right" && isNearTopOfPage && pageNumberPattern.test(text)) {
+    return "pageNumber" as const;
+  }
   if (indentBucket === "centered" && uppercaseLinePattern.test(text) && text === text.toUpperCase()) {
     return "characterCue" as const;
   }
@@ -75,6 +88,8 @@ export function normalizePdfLines(
     currentLine.items.push(item);
   }
 
+  const topY = groupedLines[0]?.y ?? 0;
+
   return groupedLines.map((line) => {
     const lineItems = [...line.items].sort((a, b) => a.x - b.x);
     const text = lineItems
@@ -91,13 +106,16 @@ export function normalizePdfLines(
       xStart,
       y: line.y,
       indentBucket,
-      roleHint: classifyRoleHint(text, indentBucket),
+      roleHint: classifyRoleHint(text, indentBucket, line.y, topY),
     };
   });
 }
 
 export function buildNormalizedScriptText(lines: NormalizedPdfLine[]) {
   const normalizedLines = lines.map((line) => {
+    if (line.roleHint === "pageNumber") {
+      return null;
+    }
     if (line.roleHint === "characterCue") {
       return line.text;
     }
@@ -111,7 +129,7 @@ export function buildNormalizedScriptText(lines: NormalizedPdfLine[]) {
     normalizedLines.unshift(titlePageMarker);
   }
 
-  return normalizedLines.join("\n");
+  return normalizedLines.filter(Boolean).join("\n");
 }
 
 export function isLikelyTitlePage(lines: NormalizedPdfLine[]) {

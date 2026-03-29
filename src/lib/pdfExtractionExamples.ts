@@ -2,11 +2,13 @@ export const pdfLineExamples = [
   {
     name: "Title page should emit a marker",
     pageItems: [
+      { str: "1", x: 560, y: 760 },
       { str: "NEXT STOP HEAVEN", x: 180, y: 720 },
       { str: "Written by", x: 210, y: 680 },
       { str: "W. Drum", x: 220, y: 650 },
     ],
     normalizedLines: [
+      { text: "1", roleHint: "pageNumber", indentBucket: "right" },
       { text: "NEXT STOP HEAVEN", roleHint: "narration", indentBucket: "dialogue" },
       { text: "Written by", roleHint: "narration", indentBucket: "dialogue" },
       { text: "W. Drum", roleHint: "narration", indentBucket: "centered" },
@@ -22,6 +24,7 @@ export const pdfLineExamples = [
   {
     name: "Centered character and dialogue, followed by narration",
     pageItems: [
+      { str: "7", x: 560, y: 760 },
       { str: "JANET", x: 245, y: 700 },
       { str: "Fuck it. Death, just take me now.", x: 180, y: 680 },
       {
@@ -31,6 +34,7 @@ export const pdfLineExamples = [
       },
     ],
     normalizedLines: [
+      { text: "7", roleHint: "pageNumber", indentBucket: "right" },
       { text: "JANET", roleHint: "characterCue", indentBucket: "centered" },
       {
         text: "Fuck it. Death, just take me now.",
@@ -59,12 +63,14 @@ export const pdfLineExamples = [
   {
     name: "Narration block before a character speaks",
     pageItems: [
+      { str: "12", x: 560, y: 760 },
       { str: "It's a gorgeous day outside.", x: 42, y: 700 },
       { str: "SASSY SENIORS wave as they pass by one another.", x: 42, y: 680 },
       { str: "JANET", x: 245, y: 640 },
       { str: "I hate how happy everyone is.", x: 180, y: 620 },
     ],
     normalizedLines: [
+      { text: "12", roleHint: "pageNumber", indentBucket: "right" },
       { text: "It's a gorgeous day outside.", roleHint: "narration", indentBucket: "left" },
       {
         text: "SASSY SENIORS wave as they pass by one another.",

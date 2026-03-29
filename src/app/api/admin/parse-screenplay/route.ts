@@ -9,7 +9,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No screenplay text provided." }, { status: 400 });
     }
 
-    const parsed = parseScript(text);
+    const {scenes, sceneCount, characterFirstScene} = parseScript(text);
 /*
     const supabase = getSupabaseAdminClient();
     let screenplayId: string | null = null;
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
     //   characterFirstScene: parsed.characterFirstScene,
     //   screenplay_id: screenplayId,
     // });
-    return NextResponse.json({ success: "parse-screenplay" }, { status: 200 });
+    return NextResponse.json({scenes, sceneCount, characterFirstScene}, { status: 200 });
   } catch (error) {
     console.error("Parse API error:", error);
     return NextResponse.json({ error: "Failed to parse screenplay." }, { status: 500 });

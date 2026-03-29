@@ -59,37 +59,7 @@ export type CharacterVoiceIds = [
     reason: string;
   }
 ]
-export type stageDirectionVerbs = [
-  "opens",
-  "bursts",
-  "walks",
-  "runs",
-  "stands",
-  "sits",
-  "comes",
-  "goes",
-  "arrives",
-  "enters",
-  "exits",
-  "rushes",
-  "throws",
-  "carries",
-  "leans",
-  "holds",
-  "grabs",
-  "points",
-  "shouts",
-  "whispers",
-  "smiles",
-  "laughs",
-  "stares",
-  "gazes",
-  "falls",
-  "spins",
-  "flips",
-  "opens",
-  "slams",
-  "breaks",
-];
-export type ageDescriptorPattern = /\((?:\s*\d{1,3}s|\s*\d{1,3} ?years|[^)]*(?:years old|yrs old|year old))\b/i;
-export const stageDirectionPattern = /^(CLOSE ON|ANGLE ON|CUT TO|PAN TO|DISSOLVE TO|FADE (IN|OUT)|CAMERA|A VOICE)/i;
+
+
+//export const ageDescriptorPattern = /\((?:\s*\d{1,3}s|\s*\d{1,3} ?years|[^)]*(?:years old|yrs old|year old))\b/i;
+//export type stageDirectionPattern = /^(CLOSE ON|ANGLE ON|CUT TO|PAN TO|DISSOLVE TO|FADE (IN|OUT)|CAMERA|A VOICE)/i;
