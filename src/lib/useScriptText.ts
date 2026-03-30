@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 const STORAGE_KEY = "script-to-audio:scriptText";
+export const CHARACTER_BUILDER_RESULTS_KEY = "characterBuilderResults";
 
 export function useScriptText() {
   const [text, setText] = useState("");
@@ -24,6 +25,7 @@ export function useScriptText() {
     setText("");
     if (typeof window !== "undefined") {
       window.localStorage.removeItem(STORAGE_KEY);
+      window.sessionStorage.removeItem(CHARACTER_BUILDER_RESULTS_KEY);
     }
   };
 

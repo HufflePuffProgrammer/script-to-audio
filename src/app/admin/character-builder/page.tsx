@@ -1,32 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useScriptText } from "@/lib/useScriptText";
-import { ChangeEvent, FormEvent, useState } from "react";
+
+import { CHARACTER_BUILDER_RESULTS_KEY, useScriptText } from "@/lib/useScriptText";
+import { ChangeEvent, FormEvent, useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 
 const steps = ["Paste Script", "build LLM Char Input", "build Char Prompt ", "Generate complete audio"];
 
-
-const Progress = ({ activeIndex }: { activeIndex: number }) => {
-  const progress = (activeIndex / (steps.length - 1)) * 100;
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-slate-500">
-        {steps.map((label, idx) => (
-          <span key={label} className={idx <= activeIndex ? "text-[#111827]" : "text-slate-400"}>
-            {label}
-          </span>
-        ))}
-      </div>
-      <div className="relative h-2 overflow-hidden rounded-full bg-slate-200">
-        <div
-          className="absolute inset-y-0 left-0 rounded-full bg-[#f9cf00] transition-all"
-          style={{ width: `${progress}%` }}
-        />
-      </div>
-    </div>
-  );
+type ResultShape = {
+  profiles?: any[];
+  characterVoiceIds?: any[];
+  profilePrompts?: string[];
 };
 
 export default function PasteStep() {
@@ -35,6 +20,40 @@ export default function PasteStep() {
   const [status, setStatus] = useState("");
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const [isExtracting, setIsExtracting] = useState(false);
+  const [results, setResults] = useState<ResultShape | null>(null);
+
+  useEffect(() => {
+    const stored = window.sessionStorage.getItem(CHARACTER_BUILDER_RESULTS_KEY);
+    if (stored) {
+      setResults(JSON.parse(stored));
+    }
+  }, []);
+
+  const hasResults = Boolean(results && (results.profiles || results.characterVoiceIds));
+console.log("results:",results);
+  const sections = useMemo(() => {
+    if (!results) return [];
+    return [
+      {
+        title: "Profiles",
+        items: results.profiles ?? [],
+      },
+      {
+        title: "Best Ranked Voices",
+        items: results.characterVoiceIds ?? [],
+      },
+      {
+        title: "Profile Prompts",
+        items: results.profilePrompts ?? [],
+      },
+    ];
+  }, [results]);
+
+  const handleClear = () => {
+    clear();
+    setResults(null);
+  };
+
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -51,15 +70,17 @@ export default function PasteStep() {
         }),
       });
 
-        if (!response.ok) {
-          throw new Error("Request failed");
-        }
+      if (!response.ok) {
+        throw new Error("Request failed");
+      }
 
       const data = await response.json();
 
       console.log("Server response:", data);
-      window.sessionStorage.setItem("characterBuilderResults", JSON.stringify(data));
-      router.push("/admin/character-builder/steps/step-3-charprofile");
+      window.sessionStorage.setItem(CHARACTER_BUILDER_RESULTS_KEY, JSON.stringify(data));
+      setResults(data);
+      setStatus("Built character profiles.");
+      //router.push("/admin/character-builder/steps/step-3-charprofile");
       } catch (error) {
         console.error(error);
         setStatus("Error submitting form");
@@ -83,7 +104,7 @@ export default function PasteStep() {
       pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
       const document = await pdfjs.getDocument({ data: arrayBuffer }).promise;
       let extractedText = "";
-     //console.log("document.numPages:",document.numPages);
+
 
       for (let pageIndex = 1; pageIndex <= document.numPages; pageIndex += 1) {
         const page = await document.getPage(pageIndex);
@@ -130,27 +151,16 @@ export default function PasteStep() {
       <div className="mx-auto flex max-w-5xl flex-col gap-6 px-6 py-10 lg:px-10">
 
         <header className="space-y-2">
-          <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-            Step 1 of 4
-          </p>
-          <h1 className="text-2xl font-bold text-slate-900">Paste Text (demo)</h1>
-          <p className="text-slate-600">
-            Paste screenplay text in the box.
-          </p>
-          <Progress activeIndex={0} />
+
+          <h1 className="text-2xl font-bold text-slate-900">Admin: Build Character Profiles</h1>
+
         </header>
 
         <form className="space-y-4" onSubmit={handleSubmit}>
           <section className="space-y-3 rounded-3xl bg-white p-6 shadow-md ring-1 ring-slate-200">
-            <textarea
-              name="text"
-              placeholder="Paste screenplay text..."
-              className="min-h-[280px] w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 shadow-inner focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100"
-              value={text}
-              onChange={(event) => setText(event.target.value)}
-            />
+            
             <label className="text-sm font-semibold text-slate-600">
-              Or upload a PDF (auto-extracts text):
+              Upload a PDF:
               <input
                 type="file"
                 accept="application/pdf"
@@ -168,7 +178,7 @@ export default function PasteStep() {
               </div>
               <button
                 type="button"
-                onClick={clear}
+                onClick={handleClear}
                 className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
               >
                 Clear
@@ -191,14 +201,7 @@ export default function PasteStep() {
               >
                 Build Character
               </button>
-              <Link
-                href="/admin/steps/parse-screenplay"
-                className="rounded-full bg-[#f9cf00] px-4 py-2 text-sm font-semibold text-[#1b1b1b] shadow-md transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
-                aria-disabled={!hasText}
-                tabIndex={hasText ? 0 : -1}
-              >
-                Next: Parse Screenplay
-              </Link>
+
             </div>
           </div>
           {status && (
@@ -208,7 +211,42 @@ export default function PasteStep() {
             <p className="text-sm text-slate-500">{uploadStatus}</p>
           )}
         </form>
+        {!hasResults && (
+          <div className="rounded-3xl bg-white p-6 shadow-md ring-1 ring-slate-200">
+            <p className="text-sm text-slate-500">
+              No data available. Build a character first by pasting or uploading a script.
+            </p>
+            <Link
+              href="/admin/character-builder"
+              className="mt-4 inline-flex rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            >
+              Back to Paste Step
+            </Link>
+          </div>
+        )}
 
+        {hasResults && (
+          <div className="space-y-6">
+            {sections.map((section) => (
+              <section key={section.title} className="rounded-3xl bg-white p-6 shadow-md ring-1 ring-slate-200">
+                <h2 className="text-lg font-semibold text-slate-900">{section.title}</h2>
+                <div className="mt-4 space-y-3 text-sm text-slate-700">
+                  {section.items.length === 0 && (
+                    <p className="text-slate-500">No entries.</p>
+                  )}
+                  {section.items.map((item, index) => (
+                    <pre
+                      key={index}
+                      className="overflow-x-auto rounded-2xl bg-slate-50 p-3 text-xs text-slate-800"
+                    >
+                      {typeof item === "string" ? item : JSON.stringify(item, null, 2)}
+                    </pre>
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        )}
       </div>
     </main>
   );

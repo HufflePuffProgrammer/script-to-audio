@@ -158,7 +158,7 @@ export default function AdminDbCheck() {
               <div>
                 <p className="text-sm font-semibold text-gray-800">Build Character Input</p>
                 <p className="text-xs text-gray-600">
-                  POST `/api/build-character` 
+                  POST `/api/admin/character-builder` 
                 </p>
               </div>
               <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
@@ -170,7 +170,7 @@ export default function AdminDbCheck() {
                 href="/admin/character-builder"
                 className="inline-flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
               >
-                Go to parse Build Character Input
+                Go Build Character 
               </Link>
             </div>
           </section>
