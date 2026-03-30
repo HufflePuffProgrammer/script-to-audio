@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 const STORAGE_KEY = "script-to-audio:scriptText";
 export const CHARACTER_BUILDER_RESULTS_KEY = "characterBuilderResults";
-
+export const PARSED_SCREENPLAY_RESULTS_KEY = "parsedScreenplayResults";
 export function useScriptText() {
   const [text, setText] = useState("");
 
@@ -26,6 +26,13 @@ export function useScriptText() {
     if (typeof window !== "undefined") {
       window.localStorage.removeItem(STORAGE_KEY);
       window.sessionStorage.removeItem(CHARACTER_BUILDER_RESULTS_KEY);
+    }
+  };
+  const clearParsedScreenplay = () => {
+    setText("");
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(STORAGE_KEY);
+      window.sessionStorage.removeItem(PARSED_SCREENPLAY_RESULTS_KEY);
     }
   };
 

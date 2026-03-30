@@ -4,7 +4,6 @@ import Link from "next/link";
 
 import { CHARACTER_BUILDER_RESULTS_KEY, useScriptText } from "@/lib/useScriptText";
 import { ChangeEvent, FormEvent, useState, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
 
 const steps = ["Paste Script", "build LLM Char Input", "build Char Prompt ", "Generate complete audio"];
 
@@ -14,8 +13,8 @@ type ResultShape = {
   profilePrompts?: string[];
 };
 
-export default function PasteStep() {
-  const router = useRouter();
+export default function BuildCharacter() {
+ 
   const { text, setText, clear, hasText, characters } = useScriptText();
   const [status, setStatus] = useState("");
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
