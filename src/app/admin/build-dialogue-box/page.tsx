@@ -35,6 +35,11 @@ type SectionConfig<TResult> = {
   selectItems: (results: TResult) => unknown[];
 };
 
+type LoadedResults = 
+| {type: "characterBuilder", results: CharacterBuilderResults} 
+| {type: "parsedScreenplay",results: ParsedScreenplayResults}
+| null;
+
 const buildSections = <TResult,>(
   results: TResult | null,
   configs: SectionConfig<TResult>[],
@@ -89,59 +94,78 @@ export default function BuildDialogueBox() {
   const [status, setStatus] = useState("");
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const [isExtracting, setIsExtracting] = useState(false);
-  const [results, setResults] = useState<ResultsShape | null>(null);
-  const [hasCPResults, setHasCPResults] = useState(false);
-  const [hasPSResults, setHasPSResults] = useState(false);
- 
-  const [activeResultType, setActiveResultType] = useState<
-    "characterBuilder" | "parsedScreenplay" | null
-  >(null);
+  const [CPResults, setCPResults] = useState<CharacterBuilderResults | null>(null);
+  const [PSResults, setPSResults] = useState<ParsedScreenplayResults | null>(null);
+  // const [hasCPResults, setHasCPResults] = useState(false);
+  // const [hasPSResults, setHasPSResults] = useState(false);
+
+  const [loadedResults, setLoadedResults ] = useState<LoadedResults>(null);
   
   const sections = useMemo(() => {
-    if (activeResultType === "characterBuilder") {
+    if (loadedResults?.type === "characterBuilder") {
       return buildSections(
-        results as CharacterBuilderResults | null,
+        loadedResults.results,
         characterBuilderSectionConfigs,
       );
     }
-    if (activeResultType === "parsedScreenplay") {
+    if (loadedResults?.type === "parsedScreenplay") {
       return buildSections(
-        results as ParsedScreenplayResults | null,
+        loadedResults.results,
         parsedScreenplaySectionConfigs,
       );
     }
     return [];
-  }, [activeResultType, results]);
+  }, [loadedResults]);
 
 
 const handleLoadCharacterProfiles = () => {
    const stored = window.localStorage.getItem(CHARACTER_BUILDER_RESULTS_KEY);
-   if (stored) {
-     setResults(JSON.parse(stored));
-     setActiveResultType("characterBuilder");
-     setHasCPResults(Boolean(results));
-     setHasPSResults(false);
-   }
-
+   if (!stored) return;
+  const parsed = JSON.parse(stored);
+  setLoadedResults({type: "characterBuilder", results: parsed});
+  setCPResults(parsed);
 }
 const handleLoadParsedScreenplay = () =>{
   const stored = window.localStorage.getItem(PARSED_SCREENPLAY_RESULTS_KEY);
-  if (stored) {
-    setResults(JSON.parse(stored));
-    setActiveResultType("parsedScreenplay");
-    setHasPSResults(Boolean(results));
-    setHasCPResults(false);
-  }
-
+  if (!stored) return;
+  const parsed = JSON.parse(stored);
+ 
+  setLoadedResults( {type: "parsedScreenplay", results: parsed})
+  setPSResults(parsed);
 }
-
+const handleClear = () => {
+  setLoadedResults(null);
+  setCPResults(null);
+  setPSResults(null);
+  console.log("Cleared results");
+}
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setStatus("Submitting...");
-    console.log("text:", text);
+    if (!CPResults || !PSResults){
+      setStatus("Load both Character Profiles and Parsed Screenplay first.");
+      return;
+    }
+      
+      const response = await fetch("/api/admin/build-dialogue-box", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          cpResults: CPResults,
+          psResults: PSResults
+        })
+      });
+      if (!response.ok){
+        console.error("Failed to build dialogue box");
+      }
+      const data = await response.json();
+      console.log("Server response:", data);
+
 
       // try {
-      // const response = await fetch("/api/admin/character-builder", {
+      // const response = await fetch("/api/admin/build-dialogue-box", {
       //   method: "POST",
       //   headers: {
       //     "Content-Type": "application/json",
@@ -191,6 +215,11 @@ const handleLoadParsedScreenplay = () =>{
             </Link>
            
             <div className="flex flex-wrap items-center gap-2">
+             <button
+           className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+           type="button"
+           onClick={handleClear}
+           >Clear</button> 
             <button
                 className="rounded-full bg-[#f9cf00] px-4 py-2 text-sm font-semibold text-[#1b1b1b] shadow-md transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
                 aria-disabled={!hasText}
@@ -227,7 +256,7 @@ const handleLoadParsedScreenplay = () =>{
             <p className="text-sm text-slate-500">{uploadStatus}</p>
           )}
         </form>
-         {(!hasCPResults && !hasPSResults )&& (
+         {(loadedResults == null) && (
           <div className="rounded-3xl bg-white p-6 shadow-md ring-1 ring-slate-200">
             <p className="text-sm text-slate-500">
               No data available. 1. Build a character 2. Parse Screenplay. 3. Build Dialogue Boxes
@@ -236,7 +265,8 @@ const handleLoadParsedScreenplay = () =>{
           </div>
         )}
 
-        {(hasCPResults || hasPSResults) && (
+
+        {(loadedResults !=null) && (  
           <div className="space-y-6">
             {sections.map((section) => (
               <section key={section.title} className="rounded-3xl bg-white p-6 shadow-md ring-1 ring-slate-200">
@@ -255,10 +285,9 @@ const handleLoadParsedScreenplay = () =>{
                   ))}
                 </div>
               </section>
-            ))}
+            ))} 
           </div>
         )}
-
 
       </div>
     </main>
