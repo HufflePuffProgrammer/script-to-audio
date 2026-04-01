@@ -15,21 +15,22 @@ type ResultShape = {
 
 export default function BuildCharacter() {
  
-  const { text, setText, clear, hasText, characters } = useScriptText();
+  const { text, setText, clearCharacterBuilder, hasText, characters } = useScriptText();
   const [status, setStatus] = useState("");
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const [isExtracting, setIsExtracting] = useState(false);
   const [results, setResults] = useState<ResultShape | null>(null);
 
   useEffect(() => {
-    const stored = window.sessionStorage.getItem(CHARACTER_BUILDER_RESULTS_KEY);
+    const stored = window.localStorage.getItem(CHARACTER_BUILDER_RESULTS_KEY);
     if (stored) {
       setResults(JSON.parse(stored));
     }
+    console.log("results from session storage",results);
   }, []);
 
   const hasResults = Boolean(results && (results.profiles || results.characterVoiceIds));
-console.log("results:",results);
+  console.log("results from useEffect",results);
   const sections = useMemo(() => {
     if (!results) return [];
     return [
@@ -49,7 +50,7 @@ console.log("results:",results);
   }, [results]);
 
   const handleClear = () => {
-    clear();
+    clearCharacterBuilder();
     setResults(null);
   };
 
@@ -76,7 +77,7 @@ console.log("results:",results);
       const data = await response.json();
 
       console.log("Server response:", data);
-      window.sessionStorage.setItem(CHARACTER_BUILDER_RESULTS_KEY, JSON.stringify(data));
+      window.localStorage.setItem(CHARACTER_BUILDER_RESULTS_KEY, JSON.stringify(data));
       setResults(data);
       setStatus("Built character profiles.");
       //router.push("/admin/character-builder/steps/step-3-charprofile");

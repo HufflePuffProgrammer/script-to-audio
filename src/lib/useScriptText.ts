@@ -21,25 +21,26 @@ export function useScriptText() {
     }
   };
 
-  const clear = () => {
+  const clearCharacterBuilder = () => {
     setText("");
     if (typeof window !== "undefined") {
       window.localStorage.removeItem(STORAGE_KEY);
-      window.sessionStorage.removeItem(CHARACTER_BUILDER_RESULTS_KEY);
+      window.localStorage.removeItem(CHARACTER_BUILDER_RESULTS_KEY);
     }
   };
   const clearParsedScreenplay = () => {
     setText("");
     if (typeof window !== "undefined") {
       window.localStorage.removeItem(STORAGE_KEY);
-      window.sessionStorage.removeItem(PARSED_SCREENPLAY_RESULTS_KEY);
+      window.localStorage.removeItem(PARSED_SCREENPLAY_RESULTS_KEY);
     }
   };
 
   return {
     text,
     setText: update,
-    clear,
+    clearCharacterBuilder,
+    clearParsedScreenplay,
     hasText: text.trim().length > 0,
     characters: text.length,
   };

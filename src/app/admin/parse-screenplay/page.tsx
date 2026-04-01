@@ -19,20 +19,21 @@ type ResultsShape = {
 
 export default function ParseScreenplay() {
 
-  const { text, setText, clear, hasText, characters } = useScriptText();
+  const { text, setText, clearParsedScreenplay, hasText, characters } = useScriptText();
   const [status, setStatus] = useState("");
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const [isExtracting, setIsExtracting] = useState(false);
   const [results, setResults] = useState<ResultsShape | null> (null);
 
   useEffect(() => {
-    const stored = window.sessionStorage.getItem(PARSED_SCREENPLAY_RESULTS_KEY);
+    const stored = window.localStorage.getItem(PARSED_SCREENPLAY_RESULTS_KEY);
     if (stored) {
       setResults(JSON.parse(stored));
     }
+    console.log("results from session storage",results);
   }, []);
 
-  const hasResults = Boolean(results );
+  const hasResults = Boolean(results);
   console.log("results:",results, "has ressults", hasResults);
   const sections = useMemo(() => {
     if (!results) return [];
@@ -59,7 +60,7 @@ export default function ParseScreenplay() {
   }, [results]);
 
   const handleClear = () => {
-    clear();
+    clearParsedScreenplay();
     setResults(null);
   };
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -84,7 +85,7 @@ export default function ParseScreenplay() {
       const data = await response.json();
 
       console.log("Server response:", data);
-      window.sessionStorage.setItem("PARSED_SCREENPLAY_RESULTS_KEY", JSON.stringify(data));
+      window.localStorage.setItem(PARSED_SCREENPLAY_RESULTS_KEY, JSON.stringify(data));
       setResults(data);
       setStatus("Parsed screenplay into dialogue boxes.");
       } catch (error) {
@@ -194,7 +195,7 @@ export default function ParseScreenplay() {
               </div>
               <button
                 type="button"
-                onClick={clear}
+                onClick={handleClear}
                 className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
               >
                 Clear
@@ -270,6 +271,7 @@ export default function ParseScreenplay() {
             ))}
           </div>
         )}
+
       </div>
     </main>
   );
