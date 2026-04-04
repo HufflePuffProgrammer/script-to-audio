@@ -7,13 +7,114 @@ import { ChangeEvent, FormEvent, useState, useEffect, useMemo } from "react";
 
 const steps = ["Paste Script", "build LLM Char Input", "build Char Prompt ", "Generate complete audio"];
 
-type ResultShape = {
+// type ResultShape = {
+//   profiles?: any[];
+//   characterVoiceIds?: any[];
+//   profilePrompts?: string[];
+// };
+
+type DialogueBoxScenesResults = {
+  scene_id?: string;
+  dialogue_boxes_scenes?: Array<{
+    character_name: string;
+    voice_id: string;
+    text:string;
+  }>;
+}
+type CharacterBuilderResults = {
   profiles?: any[];
   characterVoiceIds?: any[];
   profilePrompts?: string[];
 };
+type ParsedScreenplayResults = {
+  characterFirstScene?: Record<string, number>;
+  sceneCount?: number;
+  scenes?: Array<{
+    id: string;
+    sceneNumber: number;
+    heading: string;
+    dialogue: Array<{
+      character: string;
+      text: string;
+      isNarration: boolean;
+    }>;
+  }>;
+}
+type ResultsShape = DialogueBoxScenesResults | CharacterBuilderResults | ParsedScreenplayResults | null;
 
-export default function BuildCharacter() {
+type LoadedResults = 
+| {type: "characterBuilder", results: CharacterBuilderResults}
+| {type: "parsedScreenplay", results: ParsedScreenplayResults}
+| {type: "dialogueBoxes", results: DialogueBoxScenesResults}
+|null;
+
+type Section = {
+  title: string;
+  items: unknown[];
+}
+type SectionConfig<TResult> = {
+  title: string;
+  selectItems: (results: TResult) => unknown[];
+}
+const buildSections = <TResult,>(
+  results: TResult | null,
+  configs: SectionConfig<TResult>[],
+): Section[] =>{
+    if (!results) return [];
+    return configs.map((config)=> ({
+      title:config.title,
+      items: config.selectItems(results),
+    }))
+};
+  
+ const dialogueBoxesSCenesSEctionConfigs: SectionConfig<DialogueBoxScenesResults>[]=
+ [
+  {
+    title: "SceneID",
+    selectItems: (results)=> results.scene_id ? [results.scene_id] :[],
+  },
+  {
+    title: "Dialogue Boxes",
+    selectItems: (results)=> results.dialogue_boxes_scenes ?? [],
+  }
+ ] 
+ const characterBuilderSectionConfigs: SectionConfig<CharacterBuilderResults> []=
+ [
+  { 
+    title: "Profiles",
+    selectItems: (results)=> results.profiles ?? []
+  },
+  {
+    title: "Best Ranked Voices",
+    selectItems: (results)=> results.characterVoiceIds ?? []
+  },
+  {
+    title: "Profile Prompts",
+    selectItems: (results)=> results.profilePrompts ?? []
+  },
+ ]
+ const parsedScreenplaySectionConfigs: SectionConfig<ParsedScreenplayResults> []
+ =
+ [
+  {
+    title: "Character First Scene",
+    selectItems: (results)=> results.characterFirstScene 
+    ? Object.entries(results.characterFirstScene).map(([character, sceneNumber])=> ({
+      character,
+      sceneNumber,
+    }))
+    : [],
+  },
+  {
+    title: "Scene Count",
+    selectItems: (results)=> results.sceneCount !== undefined ? [results.sceneCount] : [],
+  },
+  {
+    title: "Scenes",
+    selectItems: (results) => results.scenes ?? []
+  }
+ ];
+ export default function BuildCharacter() {
  
   const { text, setText, clearCharacterBuilder, hasText, characters } = useScriptText();
   const [status, setStatus] = useState("");
