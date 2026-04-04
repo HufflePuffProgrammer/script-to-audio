@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 const STORAGE_KEY = "script-to-audio:scriptText";
 export const CHARACTER_BUILDER_RESULTS_KEY = "characterBuilderResults";
 export const PARSED_SCREENPLAY_RESULTS_KEY = "parsedScreenplayResults";
+export const DIALOGUE_BOXES_SCENES_KEY = "dialogueBoxesScenes";
 export function useScriptText() {
   const [text, setText] = useState("");
 

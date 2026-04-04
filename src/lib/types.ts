@@ -60,6 +60,16 @@ export type CharacterVoiceIds = [
   }
 ]
 
+export type DialogueBox = {
+  character_name: string,
+  voice_id: string,
+  text: string,
+}
+export type DialogueBoxScene = {
+  scene_id: string,
+  dialogue_boxes: DialogueBox[],
+
+}
 
 //export const ageDescriptorPattern = /\((?:\s*\d{1,3}s|\s*\d{1,3} ?years|[^)]*(?:years old|yrs old|year old))\b/i;
 //export type stageDirectionPattern = /^(CLOSE ON|ANGLE ON|CUT TO|PAN TO|DISSOLVE TO|FADE (IN|OUT)|CAMERA|A VOICE)/i;
