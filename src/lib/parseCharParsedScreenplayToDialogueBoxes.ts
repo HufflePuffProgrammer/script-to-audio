@@ -24,8 +24,9 @@ export function parseCharParsedScreenplayToDialogueBoxes(CPResults: any, PSResul
             if (box.character =="NARRATOR"){
                 dialogue_boxes.push({
                     character_name: "Narrator",
-                    voice_id: "Narrator",
+                    voice_id: "",
                     text: box.text,
+                    isNarration: true,
                 })
             }
             else {
@@ -34,6 +35,7 @@ export function parseCharParsedScreenplayToDialogueBoxes(CPResults: any, PSResul
                     character_name: box.character,
                     voice_id: characterVoiceIdsHashmap.get(box.character),
                     text: box.text,
+                    isNarration: false,
                 })
             }
      
@@ -50,6 +52,7 @@ export function parseCharParsedScreenplayToDialogueBoxes(CPResults: any, PSResul
             console.log("name:", box.character_name);
             console.log("voice_id:", box.voice_id);
             console.log("text:", box.text)
+            console.log("isNarration:", box.isNarration);
         })
     })
 

@@ -1,10 +1,12 @@
 export type DialogueLine = {
   character: string;
   text: string;
+  isNarration?: boolean;
+  voice_id?: string;
   /**
    * Marks narration-like lines (scene headings, descriptions, parentheticals).
    */
-  isNarration?: boolean;
+
 };
 
 export type Scene = {
@@ -64,6 +66,7 @@ export type DialogueBox = {
   character_name: string,
   voice_id: string,
   text: string,
+  isNarration?: boolean,
 }
 export type DialogueBoxScene = {
   scene_id: string,
