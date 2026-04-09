@@ -10,6 +10,7 @@ import {
   normalizePdfLines,
 } from "@/lib/normalizePdfLines";
 const steps = ["Paste Script", "build LLM Char Input", "build Char Prompt ", "Generate complete audio"];
+const API_URL_PARSE_SCREENPLAY = "/api/admin/parse-screenplay";
 
 type ResultsShape = {
   characterFirstScene? : any;
@@ -68,7 +69,7 @@ export default function ParseScreenplay() {
     setStatus("Submitting...");
     console.log("Text:", text);
       try {
-      const response = await fetch("/api/admin/parse-screenplay", {
+      const response = await fetch(API_URL_PARSE_SCREENPLAY, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -242,8 +243,7 @@ export default function ParseScreenplay() {
           </div>
         )}
 
-        {hasResults && (
-      
+        {hasResults && (   
           <div className="space-y-6"> 
             {sections.map((section) => (
               <section key={section.title} className="rounded-3xl bg-white p-6 shadow-md ring-1 ring-slate-200">
@@ -271,7 +271,6 @@ export default function ParseScreenplay() {
             ))}
           </div>
         )}
-
       </div>
     </main>
   );

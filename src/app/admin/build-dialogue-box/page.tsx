@@ -2,10 +2,19 @@
 
 import Link from "next/link";
 
-import { CHARACTER_BUILDER_RESULTS_KEY, PARSED_SCREENPLAY_RESULTS_KEY } from "@/lib/constants";
+import { CHARACTER_BUILDER_RESULTS_KEY, PARSED_SCREENPLAY_RESULTS_KEY, DIALOGUE_BOXES_SCENES_KEY } from "@/lib/constants";
 import { useScriptText } from "@/lib/useScriptText";
 import { ChangeEvent, FormEvent, useState,  useMemo } from "react";
+const API_URL = "/api/admin/build-dialogue-box";
 
+type DialogueBoxesScenesResults = {
+  scene_id?: Record<string,number>;
+  dialogue_boxes_scenes?: Array<{
+    character_name: string;
+    voice_id: string;
+    text:string;
+  }>;
+}
 
 type CharacterBuilderResults = {
   profiles?: any[];
@@ -26,6 +35,12 @@ type ParsedScreenplayResults = {
 
 type ResultsShape = CharacterBuilderResults | ParsedScreenplayResults | null;
 
+type LoadedResults = 
+| {type: "characterBuilder", results: CharacterBuilderResults} 
+| {type: "parsedScreenplay",results: ParsedScreenplayResults}
+| {type: "dialogueBoxesScenes", results: DialogueBoxesScenesResults}
+| null;
+
 type Section = {
   title: string;
   items: unknown[];
@@ -35,11 +50,6 @@ type SectionConfig<TResult> = {
   title: string;
   selectItems: (results: TResult) => unknown[];
 };
-
-type LoadedResults = 
-| {type: "characterBuilder", results: CharacterBuilderResults} 
-| {type: "parsedScreenplay",results: ParsedScreenplayResults}
-| null;
 
 const buildSections = <TResult,>(
   results: TResult | null,
@@ -52,6 +62,18 @@ const buildSections = <TResult,>(
   }));
 };
 
+const dialogueBoxesScenesSectionConfigs: SectionConfig<DialogueBoxesScenesResults>[]=
+[
+ {
+   title: "SceneID",
+   selectItems: (results)=> 
+          results.scene_id !== undefined ? [results.scene_id] : [],
+ },
+ {
+   title: "Dialogue Boxes",
+   selectItems: (results)=> results.dialogue_boxes_scenes ?? [],
+ }
+] 
 const characterBuilderSectionConfigs: SectionConfig<CharacterBuilderResults>[] = [
   {
     title: "Profiles",
@@ -94,11 +116,10 @@ export default function BuildDialogueBox() {
   const { text, setText, hasText } = useScriptText();
   const [status, setStatus] = useState("");
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
-
   const [CPResults, setCPResults] = useState<CharacterBuilderResults | null>(null);
   const [PSResults, setPSResults] = useState<ParsedScreenplayResults | null>(null);
-
-
+  const [results, setResults] = useState<ResultsShape | null>(null);
+  const [dialogueBoxesScenesResults,setDialogueBoxesScenesResults] = useState<DialogueBoxesScenesResults | null>(null);
   const [loadedResults, setLoadedResults ] = useState<LoadedResults>(null);
   
   const sections = useMemo(() => {
@@ -114,6 +135,12 @@ export default function BuildDialogueBox() {
         parsedScreenplaySectionConfigs,
       );
     }
+    if (loadedResults?.type === "dialogueBoxesScenes") {
+      return buildSections(
+        loadedResults.results,
+        dialogueBoxesScenesSectionConfigs,
+      );
+    }
     return [];
   }, [loadedResults]);
 
@@ -124,6 +151,7 @@ const handleLoadCharacterProfiles = () => {
   const parsed = JSON.parse(stored);
   setLoadedResults({type: "characterBuilder", results: parsed});
   setCPResults(parsed);
+  setStatus("Loaded character profiles complete.");
 }
 const handleLoadParsedScreenplay = () =>{
   const stored = window.localStorage.getItem(PARSED_SCREENPLAY_RESULTS_KEY);
@@ -131,7 +159,9 @@ const handleLoadParsedScreenplay = () =>{
   const parsed = JSON.parse(stored);
  
   setLoadedResults( {type: "parsedScreenplay", results: parsed})
+  
   setPSResults(parsed);
+  setStatus("Loaded parsed screenplay complete.");
 }
 const handleClear = () => {
   setLoadedResults(null);
@@ -147,7 +177,7 @@ const handleClear = () => {
       return;
     }
       
-      const response = await fetch("/api/admin/build-dialogue-box", {
+      const response = await fetch(API_URL,{
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -161,44 +191,13 @@ const handleClear = () => {
         console.error("Failed to build dialogue box");
       }
       const data = await response.json();
+      setResults(data)
       const {dialogue_boxes_scenes }= data;
-      dialogue_boxes_scenes.forEach((scene: any)=>{
-        console.log("Scene id:", scene.scene_id);
-        scene.dialogue_boxes.forEach((box: any)=>{
-            console.log("name:", box.character_name);
-            console.log("voice_id:", box.voice_id);
-            console.log("text:", box.text)
-        })
-      })
-      //console.log("Server response:", data);
+      window.localStorage.setItem(DIALOGUE_BOXES_SCENES_KEY,JSON.stringify(dialogue_boxes_scenes));
+      setStatus("Built dialogue boxes complete.");
+      setLoadedResults({type: "dialogueBoxesScenes", results: dialogue_boxes_scenes});
 
-
-      // try {
-      // const response = await fetch("/api/admin/build-dialogue-box", {
-      //   method: "POST",
-      //   headers: {
-      //     "Content-Type": "application/json",
-      //   },
-      //   body: JSON.stringify({
-      //     text,
-      //   }),
-      // });
-
-      // if (!response.ok) {
-      //   throw new Error("Request failed");
-      // }
-
-      // const data = await response.json();
-
-      // console.log("Server response:", data);
-      // window.localStorage.setItem(CHARACTER_BUILDER_RESULTS_KEY, JSON.stringify(data));
-      // setResults(data);
-      // setStatus("Built character profiles.");
-      //router.push("/admin/character-builder/steps/step-3-charprofile");
-      // } catch (error) {
-      //   console.error(error);
-      //   setStatus("Error submitting form");
-      // }
+      setResults(dialogue_boxes_scenes);
   };
 
   
@@ -209,7 +208,7 @@ const handleClear = () => {
 
         <header className="space-y-2">
 
-          <h1 className="text-2xl font-bold text-slate-900">Admin: Build Audio Per Dialogue Box</h1>
+          <h1 className="text-2xl font-bold text-slate-900">Admin: Build Dialogue Boxes per Scene</h1>
 
         </header>
 
@@ -274,7 +273,7 @@ const handleClear = () => {
           </div>
         )}
 
-
+{sections.length} {loadedResults?.type}
         {(loadedResults !=null) && (  
           <div className="space-y-6">
             {sections.map((section) => (

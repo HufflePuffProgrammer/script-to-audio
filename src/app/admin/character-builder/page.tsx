@@ -5,13 +5,7 @@ import Link from "next/link";
 import { CHARACTER_BUILDER_RESULTS_KEY, useScriptText } from "@/lib/useScriptText";
 import { ChangeEvent, FormEvent, useState, useEffect, useMemo } from "react";
 
-const steps = ["Paste Script", "build LLM Char Input", "build Char Prompt ", "Generate complete audio"];
-
-// type ResultShape = {
-//   profiles?: any[];
-//   characterVoiceIds?: any[];
-//   profilePrompts?: string[];
-// };
+const API_URL_CHARACTER_BUILDER = "/api/admin/character-builder";
 
 type DialogueBoxScenesResults = {
   scene_id?: string;
@@ -45,7 +39,7 @@ type ResultsShape = DialogueBoxScenesResults | CharacterBuilderResults | ParsedS
 type LoadedResults = 
 | {type: "characterBuilder", results: CharacterBuilderResults}
 | {type: "parsedScreenplay", results: ParsedScreenplayResults}
-| {type: "dialogueBoxes", results: DialogueBoxScenesResults}
+| {type: "dialogueBoxesScenes", results: DialogueBoxScenesResults}
 |null;
 
 type Section = {
@@ -67,7 +61,7 @@ const buildSections = <TResult,>(
     }))
 };
   
- const dialogueBoxesSCenesSEctionConfigs: SectionConfig<DialogueBoxScenesResults>[]=
+ const dialogueBoxesScenesSectionConfigs: SectionConfig<DialogueBoxScenesResults>[]=
  [
   {
     title: "SceneID",
@@ -120,48 +114,53 @@ const buildSections = <TResult,>(
   const [status, setStatus] = useState("");
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const [isExtracting, setIsExtracting] = useState(false);
-  const [results, setResults] = useState<ResultShape | null>(null);
-
+  const [results, setResults] = useState<ResultsShape | null>(null);
+  const [loadedResults, setLoadedResults ] = useState<LoadedResults>(null);
+ 
   useEffect(() => {
     const stored = window.localStorage.getItem(CHARACTER_BUILDER_RESULTS_KEY);
     if (stored) {
       setResults(JSON.parse(stored));
     }
-    console.log("results from session storage",results);
   }, []);
 
-  const hasResults = Boolean(results && (results.profiles || results.characterVoiceIds));
-  console.log("results from useEffect",results);
+  const hasResults = Boolean(results);
+  console.log("results:",results, "has results", hasResults);
+
   const sections = useMemo(() => {
-    if (!results) return [];
-    return [
-      {
-        title: "Profiles",
-        items: results.profiles ?? [],
-      },
-      {
-        title: "Best Ranked Voices",
-        items: results.characterVoiceIds ?? [],
-      },
-      {
-        title: "Profile Prompts",
-        items: results.profilePrompts ?? [],
-      },
-    ];
-  }, [results]);
+    if (loadedResults?.type === "characterBuilder") {
+      return buildSections(
+        loadedResults.results,
+        characterBuilderSectionConfigs,
+      );
+    }
+    if (loadedResults?.type === "parsedScreenplay") {
+      return buildSections(
+        loadedResults.results,
+        parsedScreenplaySectionConfigs,
+      );
+    }
+    if (loadedResults?.type === "dialogueBoxesScenes") {
+      return buildSections(
+        loadedResults.results,
+        dialogueBoxesScenesSectionConfigs,
+      );
+    }
+    return [];
+  }, [loadedResults]);
 
   const handleClear = () => {
     clearCharacterBuilder();
     setResults(null);
+    setLoadedResults(null);
   };
-
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setStatus("Submitting...");
     console.log("Text:", text);
       try {
-      const response = await fetch("/api/admin/character-builder", {
+      const response = await fetch(API_URL_CHARACTER_BUILDER, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -180,12 +179,13 @@ const buildSections = <TResult,>(
       console.log("Server response:", data);
       window.localStorage.setItem(CHARACTER_BUILDER_RESULTS_KEY, JSON.stringify(data));
       setResults(data);
-      setStatus("Built character profiles.");
-      //router.push("/admin/character-builder/steps/step-3-charprofile");
+      setStatus("Built character profiles completed.");
+
       } catch (error) {
         console.error(error);
         setStatus("Error submitting form");
       }
+      setStatus("Built character profiles complete.");
   };
 
   const handlePdfUpload = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -236,7 +236,6 @@ const buildSections = <TResult,>(
         extractedText += `${pageText}\n`;
       }
       console.log("extractedText:",extractedText);
-      //setText(extractedText.trim());
       setText(extractedText);
       setUploadStatus("PDF text extracted successfully.");
     } catch (error) {
