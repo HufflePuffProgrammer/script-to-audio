@@ -5,17 +5,11 @@ import Link from "next/link";
 import { CHARACTER_BUILDER_RESULTS_KEY, PARSED_SCREENPLAY_RESULTS_KEY, DIALOGUE_BOXES_SCENES_KEY } from "@/lib/constants";
 import { useScriptText } from "@/lib/useScriptText";
 import { ChangeEvent, FormEvent, useState,  useMemo } from "react";
+import {DialogueBoxScene, DialogueBox} from "@/lib/types";
 const API_URL = "/api/admin/build-dialogue-box";
 
-type DialogueBoxesScenesResults = {
-  scene_id?: Record<string,number>;
-  dialogue_boxes_scenes?: Array<{
-    character_name: string;
-    voice_id: string;
-    text:string;
-  }>;
-}
 
+type DialogueBoxesScenesLoaded = DialogueBoxScene[];
 type CharacterBuilderResults = {
   profiles?: any[];
   characterVoiceIds?: any[];
@@ -33,12 +27,12 @@ type ParsedScreenplayResults = {
   }>;
 };
 
-type ResultsShape = CharacterBuilderResults | ParsedScreenplayResults | null;
+type ResultsShape = CharacterBuilderResults | ParsedScreenplayResults | DialogueBoxesScenesLoaded| null;
 
 type LoadedResults = 
 | {type: "characterBuilder", results: CharacterBuilderResults} 
 | {type: "parsedScreenplay",results: ParsedScreenplayResults}
-| {type: "dialogueBoxesScenes", results: DialogueBoxesScenesResults}
+| {type: "dialogueBoxesScenes", results: DialogueBoxesScenesLoaded}
 | null;
 
 type Section = {
@@ -62,18 +56,16 @@ const buildSections = <TResult,>(
   }));
 };
 
-const dialogueBoxesScenesSectionConfigs: SectionConfig<DialogueBoxesScenesResults>[]=
-[
- {
-   title: "SceneID",
-   selectItems: (results)=> 
-          results.scene_id !== undefined ? [results.scene_id] : [],
- },
- {
-   title: "Dialogue Boxes",
-   selectItems: (results)=> results.dialogue_boxes_scenes ?? [],
- }
-] 
+const dialogueBoxesScenesSectionConfigs: SectionConfig<DialogueBoxesScenesLoaded>[] = [
+  {
+    title: "Scene IDs",
+    selectItems: (results) => results.map((s) => s.scene_id),
+  },
+  {
+    title: "Dialogue Boxes",
+    selectItems: (results) => results.flatMap((s) => s.dialogue_boxes),
+  },
+];
 const characterBuilderSectionConfigs: SectionConfig<CharacterBuilderResults>[] = [
   {
     title: "Profiles",
@@ -119,7 +111,6 @@ export default function BuildDialogueBox() {
   const [CPResults, setCPResults] = useState<CharacterBuilderResults | null>(null);
   const [PSResults, setPSResults] = useState<ParsedScreenplayResults | null>(null);
   const [results, setResults] = useState<ResultsShape | null>(null);
-  const [dialogueBoxesScenesResults,setDialogueBoxesScenesResults] = useState<DialogueBoxesScenesResults | null>(null);
   const [loadedResults, setLoadedResults ] = useState<LoadedResults>(null);
   
   const sections = useMemo(() => {
@@ -159,7 +150,6 @@ const handleLoadParsedScreenplay = () =>{
   const parsed = JSON.parse(stored);
  
   setLoadedResults( {type: "parsedScreenplay", results: parsed})
-  
   setPSResults(parsed);
   setStatus("Loaded parsed screenplay complete.");
 }
@@ -198,9 +188,7 @@ const handleClear = () => {
       setLoadedResults({type: "dialogueBoxesScenes", results: dialogue_boxes_scenes});
 
       setResults(dialogue_boxes_scenes);
-  };
-
-  
+  };  
 
   return (
     <main className="min-h-screen bg-[#f4f6fb]">
