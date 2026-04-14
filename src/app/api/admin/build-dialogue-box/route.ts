@@ -10,7 +10,6 @@ export async function POST(request: Request){
         }
   
         const  {dialogue_boxes_scenes , error} = parseCharParsedScreenplayToDialogueBoxes(cpResults, psResults);
-        console.log("123dialogue_boxes_scenes", dialogue_boxes_scenes);
         if (error){
              return NextResponse.json({error: "Failed to parse character parsed screenplay to dialogue boxes."}, {status: 500});
          }

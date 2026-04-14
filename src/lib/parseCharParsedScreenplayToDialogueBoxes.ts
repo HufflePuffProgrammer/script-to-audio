@@ -3,11 +3,11 @@ import {DialogueBoxScene, DialogueBox} from "./types";
 
 export function parseCharParsedScreenplayToDialogueBoxes(CPResults: any, PSResults: any){
     const scenes = PSResults.scenes;
-    const dialogue_boxes: DialogueBox[] = [];
     const dialogue_boxes_scenes: DialogueBoxScene[] = [];
     const characterVoiceIdsHashmap = arrayToHashmap(CPResults.characterVoiceIds);
 
     scenes.forEach((scene: any, index: number) => {
+        const dialogue_boxes: DialogueBox[] = [];
         scene.dialogue.forEach((box: any)=> {
             /* TBD add default narrator voice id */
             if (box.character =="NARRATOR"){
@@ -36,6 +36,10 @@ export function parseCharParsedScreenplayToDialogueBoxes(CPResults: any, PSResul
 
         })
     });
-        
+    dialogue_boxes_scenes.forEach((scene: any) => {
+        console.log("scene_id", scene.scene_id);
+        console.log("scene_number", scene.sceneNumber);
+    });
+  
     return { dialogue_boxes_scenes, error: null};
 }

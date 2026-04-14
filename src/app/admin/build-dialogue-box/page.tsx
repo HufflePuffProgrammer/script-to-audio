@@ -186,7 +186,7 @@ const handleClear = () => {
       window.localStorage.setItem(DIALOGUE_BOXES_SCENES_KEY,JSON.stringify(dialogue_boxes_scenes));
       setStatus("Built dialogue boxes complete.");
       setLoadedResults({type: "dialogueBoxesScenes", results: dialogue_boxes_scenes});
-
+console.log("dialogue_boxes_scenes", dialogue_boxes_scenes);
       setResults(dialogue_boxes_scenes);
   };  
 
@@ -261,7 +261,7 @@ const handleClear = () => {
           </div>
         )}
 
-{sections.length} {loadedResults?.type}
+
         {(loadedResults !=null) && (  
           <div className="space-y-6">
             {sections.map((section) => (
@@ -271,6 +271,7 @@ const handleClear = () => {
                   {section.items.length === 0 && (
                     <p className="text-slate-500">No entries.</p>
                   )}
+                 Length: {section.items.length}
                   {section.items.map((item, index) => (
                     <pre
                       key={index}

@@ -285,7 +285,6 @@ const [hasDialogueBoxesForAudio, setHasDialogueBoxesForAudio] = useState(false);
         });
        
         const data: { audio_url?: string; error?: string | null } = await response.json();
-        console.log("Generate scene audio Response", data);
         if (!response.ok || data.error || !data.audio_url) {
           console.error("Generate scene audio failed:", data.error ?? response.statusText);
           setAudioStatus((prev) => ({ ...prev, [scene.scene_id]: "error" }));
