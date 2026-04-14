@@ -438,6 +438,7 @@ const [hasDialogueBoxesForAudio, setHasDialogueBoxesForAudio] = useState(false);
                               <span className="text-xs text-red-600">Failed. Retry.</span>
                             )}
                           </div>
+                          <div className="mt-2 w-full"><a href={audioUrls[scene.scene_id]} download>Download audio</a></div>
                           {audioUrls[scene.scene_id] && (
                             <audio
                               key={audioUrls[scene.scene_id]}

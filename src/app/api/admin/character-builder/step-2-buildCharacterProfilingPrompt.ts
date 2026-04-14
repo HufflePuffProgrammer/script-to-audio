@@ -16,8 +16,11 @@ export function buildCharacterProfilingPrompt(characterInput: CharacterInput)
   You are analyzing a film character using ONLY the information provided.
   This text is extracted from the FIRST SCENE (or first N scenes) in which the character appears.
   
+  Do NOT change the gender of the character if it is indicated in the dialogue or scene context.
+  
   Do NOT guess information not supported by the dialogue or scene context.
   If information is unclear, mark uncertainty in the "confidence" score.
+  
   ---
   GENRE: ${characterInput.genre}
   CHARACTER NAME: ${characterInput.character}
