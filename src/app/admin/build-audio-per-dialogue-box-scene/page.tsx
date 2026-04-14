@@ -4,13 +4,14 @@ import Link from "next/link";
 import {  FormEvent, useState,  useMemo } from "react";
 import { DIALOGUE_BOXES_SCENES_KEY, CHARACTER_BUILDER_RESULTS_KEY, PARSED_SCREENPLAY_RESULTS_KEY, DIALOGUE_BOXES_AUDIO_KEY} from "@/lib/constants";
 
-import {DialogueBoxScene, DialogueBox} from "@/lib/types";
-
+import {DialogueBoxScene, DialogueBox, Scene} from "@/lib/types";
 const API_URL = "/api/admin/build-audio-per-dialogue-box-scene";
+const GENERATE_SCENE_AUDIO_URL = "/api/admin/generate-dialogue-box-scene-audio";
 
 type AudioPerDialogueBoxesResults = {
   scene_id:string;
-
+  heading: string;
+  scenes: Scene[];
 }
 /** Matches localStorage: build-dialogue-box saves `JSON.stringify(dialogue_boxes_scenes)` → `DialogueBoxScene[]`. */
 
@@ -19,7 +20,6 @@ type CharacterBuilderResults = {
     profiles?: any[];
     characterVoiceIds?: any[];
     profilePrompts?: string[];
-
   };
   
   type ParsedScreenplayResults = {
@@ -70,14 +70,28 @@ const buildSections = <TResult,>(
 const audioPerDialogueBoxesSectionConfigs: SectionConfig<AudioPerDialogueBoxesResults>[] = 
 [
   {
-    title: "Scene ID",
+    title: "Scenes",
     selectItems: (results)=> results.scene_id ? [results.scene_id] :[],
   }
+  
 ]
+
 const dialogueBoxesScenesSectionConfigs: SectionConfig<DialogueBoxesScenesLoaded>[] = [
   {
     title: "Scene IDs",
     selectItems: (results) => results.map((s) => s.scene_id),
+  },
+  {
+    title: "Scene Number",
+    selectItems: (results) => results.map((s) => s.sceneNumber),
+  },
+  {
+    title: "Heading",
+    selectItems: (results) => results.map((s) => s.heading),
+  },
+  {
+    title: "Characters",
+    selectItems: (results) => results.map((s) => s.characters),
   },
   {
     title: "Dialogue Boxes",
@@ -131,6 +145,9 @@ export default  function  BuildAudioPerDialogueBoxScene(){
 
     const [loadedResults, setLoadedResults ] = useState<LoadedResults>(null);
     const [results, setResults] = useState<ResultsShape | null>(null);
+    const [audioUrls, setAudioUrls] = useState<Record<string, string>>({});
+  const [audioStatus, setAudioStatus] = useState<Record<string, "idle" | "loading" | "ready" | "error">>({});
+const [hasDialogueBoxesForAudio, setHasDialogueBoxesForAudio] = useState(false);
     const sections = useMemo(() => {
         if (loadedResults?.type=="characterBuilder"){
             return buildSections(
@@ -145,7 +162,6 @@ export default  function  BuildAudioPerDialogueBoxScene(){
             );
         }
         if (loadedResults?.type==="dialogueBoxesScenes"){
-          console.log("2Loaded dialogue boxes scenes", loadedResults.results);
             return buildSections(
                 loadedResults.results,
                 dialogueBoxesScenesSectionConfigs,
@@ -160,18 +176,53 @@ export default  function  BuildAudioPerDialogueBoxScene(){
         return [];
     },[loadedResults]);
 
-
-
     const handleClear = () =>{
         return null;
+    }
+    const handleLoadDialogueBoxesForAudio = () =>{
+      console.log("Loading dialogue boxes for audio");
+      setHasDialogueBoxesForAudio(true);
+      // const stored = window.localStorage.getItem(DIALOGUE_BOXES_SCENES_KEY);
+      // if (!stored) return;
+      // const raw: unknown = JSON.parse(stored);
+      // const parsed: DialogueBoxesScenesLoaded = Array.isArray(raw)
+      //   ? raw
+      //   : raw !== null &&
+      //       typeof raw === "object" &&
+      //       "dialogue_boxes_scenes" in raw &&
+      //       Array.isArray((raw as { dialogue_boxes_scenes: unknown }).dialogue_boxes_scenes)
+      //     ? (raw as { dialogue_boxes_scenes: DialogueBoxScene[] }).dialogue_boxes_scenes
+      //     : [];
+
+      // setDialogueBoxesScenes(parsed);
+      // TEMPORARY for testing
+      const AudioPerDialogueBoxesResults: AudioPerDialogueBoxesResults = {
+        scene_id: "123",
+        heading: "123",
+        scenes: dialogueBoxesScenes.map((scene) => ({
+          id: scene.scene_id,
+          dialogue: scene.dialogue_boxes.map((dialogue) => ({
+            character: dialogue.character_name,
+            text: dialogue.text,
+            isNarration: dialogue.isNarration,
+          })),
+          sceneNumber: scene.sceneNumber,
+          heading: scene.heading,
+          characters: scene.characters,
+        })),
+      }
+       setLoadedResults({type: "audioPerDialogueBoxes", results: AudioPerDialogueBoxesResults}); 
+      // setHasText(true);
+       setStatus("Loaded build audio for dialogue boxes complete.");
     }
     const handleLoadCharacterBuilder = () => {
         const stored = window.localStorage.getItem(CHARACTER_BUILDER_RESULTS_KEY);
         if (!stored) return;
         const parsed = JSON.parse(stored);
-        setLoadedResults({results: parsed, type:"characterBuilder"});
+        setLoadedResults({type:"characterBuilder",results:parsed});
         setHasText(true);
         setStatus("Loaded character builder complete.");
+        setHasDialogueBoxesForAudio(false);
     }
     const handleLoadParsedScreenplay = () => {
         const stored = window.localStorage.getItem(PARSED_SCREENPLAY_RESULTS_KEY);
@@ -180,6 +231,7 @@ export default  function  BuildAudioPerDialogueBoxScene(){
         setLoadedResults({type: "parsedScreenplay", results: parsed});
         setHasText(true);
         setStatus("Loaded parsed screenplay complete.");
+        setHasDialogueBoxesForAudio(false);
       }
     const handleLoadDialogueBoxesScenes = ()=> {
         const stored = window.localStorage.getItem(DIALOGUE_BOXES_SCENES_KEY);
@@ -198,6 +250,7 @@ export default  function  BuildAudioPerDialogueBoxScene(){
         setLoadedResults({type: "dialogueBoxesScenes", results: parsed}); 
         setHasText(true);
         setStatus("Loaded dialogue boxes scenes complete.");
+        setHasDialogueBoxesForAudio(false);
     }
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -219,8 +272,35 @@ export default  function  BuildAudioPerDialogueBoxScene(){
         if (!result.ok){ 
             console.error("API error");
         }
+        setHasDialogueBoxesForAudio(false);
     }
 
+    const generateAudio = async (scene: DialogueBoxScene) => {
+      setAudioStatus((prev) => ({ ...prev, [scene.scene_id]: "loading" }));
+      try {
+        const response = await fetch(GENERATE_SCENE_AUDIO_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ dialogueBoxScene: scene }),
+        });
+       
+        const data: { audio_url?: string; error?: string | null } = await response.json();
+        console.log("Generate scene audio Response", data);
+        if (!response.ok || data.error || !data.audio_url) {
+          console.error("Generate scene audio failed:", data.error ?? response.statusText);
+          setAudioStatus((prev) => ({ ...prev, [scene.scene_id]: "error" }));
+          return;
+        }
+        setAudioUrls((prev) => {
+          const next = { ...prev, [scene.scene_id]: data.audio_url! };
+          return next;
+        });
+        setAudioStatus((prev) => ({ ...prev, [scene.scene_id]: "ready" }));
+      } catch (error) {
+        setAudioStatus((prev) => ({ ...prev, [scene.scene_id]: "error" }));
+      }
+    };
+  
     return (
         <main className="min-h-screen bg-[#f4f6fb]">
       <div className="mx-auto flex max-w-5xl flex-col gap-6 px-6 py-10 lg:px-10">
@@ -278,7 +358,8 @@ export default  function  BuildAudioPerDialogueBoxScene(){
                 className="rounded-full bg-[#f9cf00] px-4 py-2 text-sm font-semibold text-[#1b1b1b] shadow-md transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
                 aria-disabled={!hasText}
                 tabIndex={hasText ? 0 : -1}
-                type="submit"
+                type="button"
+                onClick={handleLoadDialogueBoxesForAudio}
               >
                 4. Build Audio 
               </button>
@@ -301,9 +382,7 @@ export default  function  BuildAudioPerDialogueBoxScene(){
    
           </div>
         )}
-
-
-        {(loadedResults !=null) && (  
+         {(loadedResults !=null) && !hasDialogueBoxesForAudio && (  
           <div className="space-y-6">
             {sections.map((section) => (
               <section key={section.title} className="rounded-3xl bg-white p-6 shadow-md ring-1 ring-slate-200">
@@ -324,10 +403,71 @@ export default  function  BuildAudioPerDialogueBoxScene(){
               </section>
             ))} 
           </div>
-        )}
+        ) }
+        {(loadedResults!=null) && (hasDialogueBoxesForAudio) &&(
+            <div className="space-y-6">
 
+                <section key={sections[0].title} className="rounded-3xl bg-white p-6 shadow-md ring-1 ring-slate-200">
+                  <h2 className="text-lg font-semibold text-slate-900">{sections[0].title}</h2>
+                  <div className="mt-4 space-y-3 text-sm text-slate-700">
+                    {
+                      dialogueBoxesScenes.map((scene)=>(
+                      <div
+                          key={scene.scene_id}
+                          className="space-y-2 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+                        >
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-semibold text-slate-900">
+                              Scene {scene.sceneNumber}
+                            </p>
+                            <span className="text-xs text-slate-500">{scene.heading}</span>
+                          </div>
+                          <div className="h-2 w-full overflow-hidden rounded-full bg-white ring-1 ring-slate-200">
+                            <div className="h-full w-[45%] rounded-full bg-gradient-to-r from-indigo-500 to-purple-500" />
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <button
+                              type="button"
+                              onClick={() => generateAudio(scene)}
+                              disabled={audioStatus[scene.scene_id] === "loading"}
+                              className="rounded-full bg-[#f9cf00] px-3 py-1 text-xs font-semibold text-[#1b1b1b] shadow-sm transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {audioStatus[scene.scene_id] === "loading" ? "Generating..." : "Generate audio"}
+                            </button>
+                            {audioStatus[scene.scene_id] === "error" && (
+                              <span className="text-xs text-red-600">Failed. Retry.</span>
+                            )}
+                          </div>
+                          {audioUrls[scene.scene_id] && (
+                            <audio
+                              key={audioUrls[scene.scene_id]}
+                              controls
+                              className="mt-2 w-full"
+                              crossOrigin="anonymous"
+                            >
+                              <source src={audioUrls[scene.scene_id]} type="audio/mpeg" />
+                            </audio>
+                          )}
+                        </div>
+                      )
+                    )
+                }                  </div>
+                </section>
+             </div>
+        )
+      }
       </div>
     </main>
     )
 
 }
+
+/*
+                        <pre key={scene.scene_id} className="overflow-x-auto rounded-2xl bg-slate-50 p-3 text-xs text-slate-800">
+                          scene: {scene.scene_id}
+                          sceneNumber: {scene.sceneNumber}
+                          heading: {scene.heading}
+                          characters: {scene.characters}
+                          dialogue_boxes: {scene.dialogue_boxes.length}
+                        </pre>
+*/

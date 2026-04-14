@@ -29,6 +29,9 @@ export function parseCharParsedScreenplayToDialogueBoxes(CPResults: any, PSResul
         })
         dialogue_boxes_scenes.push({
             scene_id: scene.sceneNumber,
+            sceneNumber: scene.sceneNumber,
+            heading: scene.heading,
+            characters: scene.characters,
             dialogue_boxes: dialogue_boxes,
 
         })

@@ -38,6 +38,11 @@ create table audio_assets (
   audio_url text,
   created_at timestamptz default now()
 );
+
+-- If you use **app-level** scene keys (e.g. dialogue-box `scene_id` `"2"`) instead of `scenes.id` uuids,
+-- change the column to text and drop the FK (run once):
+-- alter table audio_assets drop constraint if exists audio_assets_scene_id_fkey;
+-- alter table audio_assets alter column scene_id type text using scene_id::text;
 ```
 
 ## 4) Clients
@@ -68,8 +73,15 @@ create policy "audio_write_service" on audio_assets
 ```
 - If unauthenticated dev only, you can leave RLS off temporarily. For multi-user, add Supabase Auth and per-user ownership columns/policies (e.g., `owner_id uuid references auth.users(id)`).
 
-## 6) Optional: Storage for audio files
-- Create a bucket (e.g., `audio`), upload generated audio there, and store the public URL in `audio_assets.audio_url` instead of a data URL.
+## 6) Storage for audio files (required for hosted MP3 URLs)
+The app uploads to **`audio`** by default (`SUPABASE_AUDIO_BUCKET` overrides the name). If you see **`Bucket not found`**, the bucket does not exist yet.
+
+1. Supabase Dashboard → **Storage** → **New bucket**.
+2. Name: **`audio`** (or another name — then set `SUPABASE_AUDIO_BUCKET` in `.env.local` to match).
+3. **Playback:** The API prefers **`createSignedUrl`** so **private** buckets still work in `<audio src="…">`. Optional: `SUPABASE_AUDIO_SIGNED_URL_EXPIRY_SEC` (default ~7 days). For permanent links without expiry, use a **public** bucket or sign URLs when serving.
+4. Optional env: `SUPABASE_AUDIO_BUCKET=audio`
+
+Without a bucket, generation still succeeds: the API falls back to a **base64 data URL** for `audio_url`.
 
 ## 7) Integration notes
 - `/api/parse`: insert screenplay + scenes after parsing.

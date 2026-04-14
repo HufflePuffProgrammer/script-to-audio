@@ -68,10 +68,14 @@ export type DialogueBox = {
   text: string,
   isNarration?: boolean,
 }
+
+
 export type DialogueBoxScene = {
   scene_id: string,
+  sceneNumber: number;
+  heading: string;
+  characters: string[];
   dialogue_boxes: DialogueBox[],
-
 }
 
 //export const ageDescriptorPattern = /\((?:\s*\d{1,3}s|\s*\d{1,3} ?years|[^)]*(?:years old|yrs old|year old))\b/i;

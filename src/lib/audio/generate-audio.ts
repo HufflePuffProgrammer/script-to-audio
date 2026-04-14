@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getElevenLabsClient } from "@/lib/elevenlabsClient";
-import { DialogueLine } from "@/lib/types";
+import { DialogueLine, DialogueBox, DialogueBoxScene } from "@/lib/types";
 import { narratorLabel } from "@/lib/constants";
 import { getSupabaseAdminClient } from "@/lib/supabaseServer";
 import { isDatabaseSceneUuid } from "@/lib/isDatabaseSceneUuid";
@@ -16,6 +16,7 @@ type Body = {
 // Fallback voice IDs with optional env overrides (replace with Agent mapping later)
 const DEFAULT_VOICE_ID =
   process.env.ELEVENLABS_VOICE_DEFAULT_ID ?? "EXAVITQu4vr4xnSDxMaL"; // Adam
+/** Prefer a second voice via env; avoid hardcoding a second preset ID (often 404 on other accounts). */
 const ALT_VOICE_ID = process.env.ELEVENLABS_VOICE_ALT_ID ?? DEFAULT_VOICE_ID;
 const NARRATOR_VOICE_ID =
   process.env.ELEVENLABS_VOICE_NARRATOR_ID ?? DEFAULT_VOICE_ID;
@@ -49,10 +50,10 @@ const hashString = (value: string) => {
   return Math.abs(hash);
 };
 
-const buildVoiceMap = (dialogue: DialogueLine[]) => {
+const buildVoiceMap = (dialogueBoxes: DialogueBox[]) => {
   const aggregated = new Map<string, string>();
-  for (const line of dialogue) {
-    const name = normalizeCharacter(line.character);
+  for (const line of dialogueBoxes) {
+    const name = normalizeCharacter(line.character_name);
     const existing = aggregated.get(name) ?? "";
     aggregated.set(name, `${existing} ${line.text}`.trim());
   }
@@ -88,10 +89,11 @@ const buildVoiceMap = (dialogue: DialogueLine[]) => {
   return map;
 };
 
-const voiceIdForLine = (line: DialogueLine, voiceMap: Map<string, string>) => {
+/** Per-line voice from character builder wins; avoids 404 when default ALT_VOICE_ID is not on the account. */
+const voiceIdForDialogueBox = (line: DialogueBox, voiceMap: Map<string, string>) => {
   const fromLine = line.voice_id?.trim();
   if (fromLine) return fromLine;
-  return voiceMap.get(normalizeCharacter(line.character)) ?? DEFAULT_VOICE_ID;
+  return voiceMap.get(normalizeCharacter(line.character_name)) ?? DEFAULT_VOICE_ID;
 };
 
 const toBuffer = async (audio: unknown) => {
@@ -137,25 +139,24 @@ const toBuffer = async (audio: unknown) => {
   throw new Error("Unsupported audio payload type from ElevenLabs");
 };
 
-export async function POST(request: Request) {
+export async function generateAudioFromDialogueBoxScene(dialogueBoxScene: DialogueBoxScene) {
   try {
-    const { scene_id: sceneId, dialogue }: Body = await request.json();
-    if (!sceneId || typeof sceneId !== "string") {
-      return NextResponse.json({ error: "scene_id required" }, { status: 400 });
+    const { scene_id, dialogue_boxes } = dialogueBoxScene;
+    if (scene_id === undefined || scene_id === null || String(scene_id).trim() === "") {
+      return { audio_url: "", error: "scene_id required" };
     }
-    if (!dialogue || !Array.isArray(dialogue) || dialogue.length === 0) {
-      return NextResponse.json({ error: "dialogue array required" }, { status: 400 });
+    const sceneKey = String(scene_id);
+    if (!dialogue_boxes || !Array.isArray(dialogue_boxes) || dialogue_boxes.length === 0) {
+      return { audio_url: "", error: "dialogue_boxes required" };
     }
-
     const client = getElevenLabsClient();
-    const voiceMap = buildVoiceMap(dialogue);
-
+    const voiceMap = buildVoiceMap(dialogue_boxes);
     // Use textToDialogue for multi-speaker synthesis
     const audio = await client.textToDialogue.convert({
       outputFormat: "mp3_44100_128",
-      inputs: dialogue.map((line) => ({
+      inputs: dialogue_boxes.map((line) => ({
         text: line.text,
-        voiceId: voiceIdForLine(line, voiceMap),
+        voiceId: voiceIdForDialogueBox(line, voiceMap),
       })),
     });
 
@@ -164,10 +165,11 @@ export async function POST(request: Request) {
     const base64 = audioBuffer.toString("base64");
     const dataUrl = `data:audio/mpeg;base64,${base64}`;
 
-    let storedUrl: string | null = null;
+    let storedUrl: string = "";
+    
     const supabase = getSupabaseAdminClient();
     if (supabase) {
-      const filePath = `${sceneId}/${Date.now()}.mp3`;
+      const filePath = `${sceneKey}/${Date.now()}.mp3`;
       const { error: uploadError } = await supabase.storage
         .from(AUDIO_BUCKET)
         .upload(filePath, audioBuffer, {
@@ -178,23 +180,22 @@ export async function POST(request: Request) {
         console.error(
           "Supabase audio upload failed:",
           uploadError.message,
-          `(bucket: "${AUDIO_BUCKET}" — create this bucket in Supabase → Storage, or set SUPABASE_AUDIO_BUCKET)`,
+          `(bucket: "${AUDIO_BUCKET}" — create this bucket in Supabase → Storage, or set SUPABASE_AUDIO_BUCKET to an existing bucket name)`,
         );
       } else {
-        storedUrl = await getPlayableStorageObjectUrl(supabase, AUDIO_BUCKET, filePath);
+        storedUrl = (await getPlayableStorageObjectUrl(supabase, AUDIO_BUCKET, filePath)) ?? "";
       }
     }
 
     const audioUrl = storedUrl ?? dataUrl;
-
     if (supabase) {
-      if (!isDatabaseSceneUuid(sceneId)) {
+      if (!isDatabaseSceneUuid(sceneKey)) {
         console.warn(
-          `Skipping audio_assets row: scene_id "${sceneId}" is not a database uuid. See docs/db-setup.md.`,
+          `Skipping audio_assets row: scene_id "${sceneKey}" is not a database uuid (expected scenes.id). Use a uuid or change audio_assets.scene_id to text — see docs/db-setup.md.`,
         );
       } else {
         const { error: persistError } = await supabase.from("audio_assets").insert({
-          scene_id: sceneId,
+          scene_id: sceneKey,
           audio_url: audioUrl,
         });
         if (persistError) {
@@ -202,12 +203,13 @@ export async function POST(request: Request) {
         }
       }
     }
-    return NextResponse.json({ audio_url: audioUrl });
+    console.log("generateAudioFromDialogueBoxScene: audioUrl", audioUrl);
+    return { audio_url: audioUrl, error: null };
   } catch (error) {
     console.error("Generate audio API error:", error);
     const message =
       error instanceof Error ? error.message : "Failed to generate audio.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return { audio_url: "", error: message };
   }
 }
 
