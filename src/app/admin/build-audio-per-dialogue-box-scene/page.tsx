@@ -277,6 +277,7 @@ const [hasDialogueBoxesForAudio, setHasDialogueBoxesForAudio] = useState(false);
 
     const generateAudio = async (scene: DialogueBoxScene) => {
       setAudioStatus((prev) => ({ ...prev, [scene.scene_id]: "loading" }));
+      console.log("generateAudio: BEFORE");
       try {
         const response = await fetch(GENERATE_SCENE_AUDIO_URL, {
           method: "POST",
@@ -437,7 +438,12 @@ const [hasDialogueBoxesForAudio, setHasDialogueBoxesForAudio] = useState(false);
                               <span className="text-xs text-red-600">Failed. Retry.</span>
                             )}
                           </div>
-                          <div className="mt-2 w-full"><a href={audioUrls[scene.scene_id]} download>Download audio</a></div>
+                          {audioUrls[scene.scene_id] && (
+                            <div className="mt-2 w-full">
+                            <a href={audioUrls[scene.scene_id]} download>Download audio</a>
+                            </div>
+                          )}
+                          
                           {audioUrls[scene.scene_id] && (
                             <audio
                               key={audioUrls[scene.scene_id]}

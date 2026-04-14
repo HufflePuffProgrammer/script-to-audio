@@ -28,6 +28,8 @@ export function parseScript(text: string) {
   const scenes: Scene[] = [];
   let currentScene: Scene | null = null;
   let activeCharacter: string | null = null;
+  /** False until the first INT./EXT. slug — covers title/credits before the first scene. */
+  let seenFirstSlug = false;
 
   
   for (const rawLine of lines) {
@@ -46,6 +48,7 @@ export function parseScript(text: string) {
 
     if (narratorOnlyPattern.test(trimmed)) {
       if (!currentScene) {
+        /* FADE IN opens the script; use a neutral heading unless a TITLE PAGE scene already exists. */
         currentScene = {
           id: makeId("scene", scenes.length + 1),
           sceneNumber: scenes.length + 1,
@@ -70,6 +73,7 @@ export function parseScript(text: string) {
     }
 
     if (headingPattern.test(trimmed)) {
+      seenFirstSlug = true;
       if (currentScene) scenes.push(currentScene);
       currentScene = {
         id: makeId("scene", scenes.length + 1),
@@ -93,6 +97,36 @@ export function parseScript(text: string) {
       : null;
 
     if (!isStageOrDescription && canonicalName) {
+      /* Centered ALL CAPS title lines from PDFs look like character cues but are not. */
+      if (!seenFirstSlug) {
+        activeCharacter = null;
+        if (!currentScene) {
+          currentScene = {
+            id: makeId("scene", scenes.length + 1),
+            sceneNumber: scenes.length + 1,
+            heading: "TITLE PAGE",
+            characters: [],
+            dialogue: [],
+          };
+        }
+        const character = narratorLabel;
+        const isNarration = true;
+        const lastPre = currentScene.dialogue[currentScene.dialogue.length - 1];
+        const appendPre =
+          lastPre &&
+          lastPre.character === character &&
+          lastPre.isNarration === isNarration;
+        if (appendPre) {
+          lastPre.text = `${lastPre.text} ${trimmed}`.trim();
+        } else {
+          currentScene.dialogue.push({
+            character,
+            text: trimmed,
+            isNarration,
+          });
+        }
+        continue;
+      }
       activeCharacter = canonicalName;
       continue;
     }
@@ -102,7 +136,7 @@ export function parseScript(text: string) {
       currentScene = {
         id: makeId("scene", scenes.length + 1),
         sceneNumber: scenes.length + 1,
-        heading: "SCENE",
+        heading: seenFirstSlug ? "SCENE" : "TITLE PAGE",
         characters: [],
         dialogue: [],
       };

@@ -15,7 +15,7 @@ type Body = {
 
 // Fallback voice IDs with optional env overrides (replace with Agent mapping later)
 const DEFAULT_VOICE_ID =
-  process.env.ELEVENLABS_VOICE_DEFAULT_ID ?? "EXAVITQu4vr4xnSDxMaL"; // Adam
+  process.env.ELEVENLABS_VOICE_DEFAULT_ID ?? "XrExE9yKIg1WjnnlVkGX"; // Adam
 /** Prefer a second voice via env; avoid hardcoding a second preset ID (often 404 on other accounts). */
 const ALT_VOICE_ID = process.env.ELEVENLABS_VOICE_ALT_ID ?? DEFAULT_VOICE_ID;
 const NARRATOR_VOICE_ID =
@@ -152,6 +152,7 @@ export async function generateAudioFromDialogueBoxScene(dialogueBoxScene: Dialog
     const client = getElevenLabsClient();
     const voiceMap = buildVoiceMap(dialogue_boxes);
     // Use textToDialogue for multi-speaker synthesis
+       
     const audio = await client.textToDialogue.convert({
       outputFormat: "mp3_44100_128",
       inputs: dialogue_boxes.map((line) => ({

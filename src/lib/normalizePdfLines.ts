@@ -1,3 +1,5 @@
+import { titlePageMarker } from "./constants";
+
 export type PdfPositionedTextItem = {
   str?: string;
   x: number;
@@ -19,8 +21,9 @@ export type NormalizedPdfLine = {
 
 const uppercaseLinePattern = /^[A-Z0-9\s.'()\-]{2,40}$/;
 const pageNumberPattern = /^\d+$/;
-const titleIndicatorPattern = /written\s+by/i;
-export const titlePageMarker = "[[TITLE_PAGE]]";
+/** Match anywhere on the page — title/credits blocks are often below centered title (not in first lines). */
+const titlePageIndicatorPattern =
+  /(written\s+by|screenplay\s+by|story\s+by|teleplay\s+by|created\s+by)/i;
 
 const classifyIndentBucket = (xStart: number) => {
   if (xStart >= 500) {
@@ -133,5 +136,5 @@ export function buildNormalizedScriptText(lines: NormalizedPdfLine[]) {
 }
 
 export function isLikelyTitlePage(lines: NormalizedPdfLine[]) {
-  return lines.slice(0, 12).some((line) => titleIndicatorPattern.test(line.text));
+  return lines.some((line) => titlePageIndicatorPattern.test(line.text));
 }

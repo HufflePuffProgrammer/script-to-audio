@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { generateAudioFromDialogueBoxScene } from "@/lib/audio/generate-audio";
 export async function POST(request: Request){
     try{
+        console.log("build-audio-per-dialogue-box-scene: BEFORE");
         const {dialogue_boxes_scenes} = await request.json();
         if (dialogue_boxes_scenes ==null){
             return NextResponse.json({error:"No dialogue boxes scenes provided."}, {status: 401});
