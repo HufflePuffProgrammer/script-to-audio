@@ -54,7 +54,6 @@ export function parseScriptToCharInput(text: string) {
   let genre: string | null = null;
   const indentedLinePattern = /^\s{2,}/;
 
-  console.log("text", text);
   const getSceneContext = () =>
     sceneContextLines.filter(Boolean).join("\n").trim();
 

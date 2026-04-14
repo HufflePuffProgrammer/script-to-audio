@@ -5,7 +5,7 @@ import {  FormEvent, useState,  useMemo } from "react";
 import { DIALOGUE_BOXES_SCENES_KEY, CHARACTER_BUILDER_RESULTS_KEY, PARSED_SCREENPLAY_RESULTS_KEY, DIALOGUE_BOXES_AUDIO_KEY} from "@/lib/constants";
 
 import {DialogueBoxScene, DialogueBox, Scene} from "@/lib/types";
-const API_URL = "/api/admin/build-audio-per-dialogue-box-scene";
+const API_URL = "/api/admin/build-complete-audio";
 const GENERATE_SCENE_AUDIO_URL = "/api/admin/generate-dialogue-box-scene-audio";
 
 type AudioPerDialogueBoxesResults = {
@@ -363,7 +363,15 @@ const [hasDialogueBoxesForAudio, setHasDialogueBoxesForAudio] = useState(false);
               >
                 4. Build Audio 
               </button>
-              
+              <button
+                className="rounded-full bg-[#f9cf00] px-4 py-2 text-sm font-semibold text-[#1b1b1b] shadow-md transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
+                aria-disabled={!hasText}
+                tabIndex={hasText ? 0 : -1}
+                type="submit"
+            onClick={handleSubmit}
+              >
+                5. Build Complete Audio 
+              </button>             
               
             </div>
           </div>
