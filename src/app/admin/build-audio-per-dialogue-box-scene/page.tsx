@@ -71,8 +71,9 @@ const audioPerDialogueBoxesSectionConfigs: SectionConfig<AudioPerDialogueBoxesRe
 [
   {
     title: "Scenes",
+   
     selectItems: (results)=> results.scene_id ? [results.scene_id] :[],
-  }
+  },
   
 ]
 
@@ -146,8 +147,8 @@ export default  function  BuildAudioPerDialogueBoxScene(){
     const [loadedResults, setLoadedResults ] = useState<LoadedResults>(null);
     const [results, setResults] = useState<ResultsShape | null>(null);
     const [audioUrls, setAudioUrls] = useState<Record<string, string>>({});
-  const [audioStatus, setAudioStatus] = useState<Record<string, "idle" | "loading" | "ready" | "error">>({});
-const [hasDialogueBoxesForAudio, setHasDialogueBoxesForAudio] = useState(false);
+    const [audioStatus, setAudioStatus] = useState<Record<string, "idle" | "loading" | "ready" | "error">>({});
+    const [hasDialogueBoxesForAudio, setHasDialogueBoxesForAudio] = useState(false);
     const sections = useMemo(() => {
         if (loadedResults?.type=="characterBuilder"){
             return buildSections(
@@ -177,25 +178,29 @@ const [hasDialogueBoxesForAudio, setHasDialogueBoxesForAudio] = useState(false);
     },[loadedResults]);
 
     const handleClear = () =>{
+      console.log("Clearing all data");
         return null;
     }
     const handleLoadDialogueBoxesForAudio = () =>{
       console.log("Loading dialogue boxes for audio");
-      setHasDialogueBoxesForAudio(true);
-      // const stored = window.localStorage.getItem(DIALOGUE_BOXES_SCENES_KEY);
-      // if (!stored) return;
-      // const raw: unknown = JSON.parse(stored);
-      // const parsed: DialogueBoxesScenesLoaded = Array.isArray(raw)
-      //   ? raw
-      //   : raw !== null &&
-      //       typeof raw === "object" &&
-      //       "dialogue_boxes_scenes" in raw &&
-      //       Array.isArray((raw as { dialogue_boxes_scenes: unknown }).dialogue_boxes_scenes)
-      //     ? (raw as { dialogue_boxes_scenes: DialogueBoxScene[] }).dialogue_boxes_scenes
-      //     : [];
 
-      // setDialogueBoxesScenes(parsed);
-      // TEMPORARY for testing
+      const stored = window.localStorage.getItem(DIALOGUE_BOXES_SCENES_KEY);
+      if (!stored) return;
+      const raw: unknown = JSON.parse(stored);
+      const parsed: DialogueBoxesScenesLoaded = Array.isArray(raw)
+        ? raw
+        : raw !== null &&
+            typeof raw === "object" &&
+            "dialogue_boxes_scenes" in raw &&
+            Array.isArray((raw as { dialogue_boxes_scenes: unknown }).dialogue_boxes_scenes)
+          ? (raw as { dialogue_boxes_scenes: DialogueBoxScene[] }).dialogue_boxes_scenes
+          : [];
+
+      setDialogueBoxesScenes(parsed);
+      setLoadedResults({type: "dialogueBoxesScenes", results: parsed}); 
+      setHasDialogueBoxesForAudio(true);
+      console.log("dialoguge boxes:",parsed);
+
       const AudioPerDialogueBoxesResults: AudioPerDialogueBoxesResults = {
         scene_id: "123",
         heading: "123",
@@ -209,6 +214,7 @@ const [hasDialogueBoxesForAudio, setHasDialogueBoxesForAudio] = useState(false);
           sceneNumber: scene.sceneNumber,
           heading: scene.heading,
           characters: scene.characters,
+          audio_url: scene.audio_url,
         })),
       }
        setLoadedResults({type: "audioPerDialogueBoxes", results: AudioPerDialogueBoxesResults}); 
@@ -267,6 +273,7 @@ const [hasDialogueBoxesForAudio, setHasDialogueBoxesForAudio] = useState(false);
         const data = await result.json();
         setResults(data);
         window.localStorage.setItem(DIALOGUE_BOXES_AUDIO_KEY,JSON.stringify(data));
+        console.log("Submitted build audio per dialogue box complete.");
         console.log("Server response", data);
         setStatus("Built audio per dialogue box complete.");
         if (!result.ok){ 
@@ -295,7 +302,15 @@ const [hasDialogueBoxesForAudio, setHasDialogueBoxesForAudio] = useState(false);
           const next = { ...prev, [scene.scene_id]: data.audio_url! };
           return next;
         });
+        setDialogueBoxesScenes((prev) => {
+          const next = prev.map((s) => s.scene_id === scene.scene_id ? { ...s, audio_url: data.audio_url! } : s);
+          return next;
+        });
         setAudioStatus((prev) => ({ ...prev, [scene.scene_id]: "ready" }));
+        console.log("NEW scene.scene_id:", scene.scene_id, "NEW AUDIO URL:", data.audio_url);
+        dialogueBoxesScenes.map((s)=> console.log("NEW dialogue boxes:", s.scene_id, s.heading, s.sceneNumber,s.audio_url));
+        window.localStorage.setItem(DIALOGUE_BOXES_AUDIO_KEY,JSON.stringify(data));
+        //console.log("dialoguge boxes:",dialogueBoxesScenes);
       } catch (error) {
         setAudioStatus((prev) => ({ ...prev, [scene.scene_id]: "error" }));
       }
@@ -418,7 +433,7 @@ const [hasDialogueBoxesForAudio, setHasDialogueBoxesForAudio] = useState(false);
                         >
                           <div className="flex items-center justify-between">
                             <p className="text-sm font-semibold text-slate-900">
-                              Scene {scene.sceneNumber}
+                            <span className="text-xs text-slate-500">scene ID: {scene.scene_id}</span><br/>Scene {scene.sceneNumber}
                             </p>
                             <span className="text-xs text-slate-500">{scene.heading}</span>
                           </div>

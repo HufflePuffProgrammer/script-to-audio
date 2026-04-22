@@ -73,7 +73,6 @@ const audioPerDialogueBoxesSectionConfigs: SectionConfig<AudioPerDialogueBoxesRe
     title: "Scenes",
     selectItems: (results)=> results.scene_id ? [results.scene_id] :[],
   }
-  
 ]
 
 const dialogueBoxesScenesSectionConfigs: SectionConfig<DialogueBoxesScenesLoaded>[] = [
@@ -146,8 +145,10 @@ export default  function  BuildAudioPerDialogueBoxScene(){
     const [loadedResults, setLoadedResults ] = useState<LoadedResults>(null);
     const [results, setResults] = useState<ResultsShape | null>(null);
     const [audioUrls, setAudioUrls] = useState<Record<string, string>>({});
-  const [audioStatus, setAudioStatus] = useState<Record<string, "idle" | "loading" | "ready" | "error">>({});
-const [hasDialogueBoxesForAudio, setHasDialogueBoxesForAudio] = useState(false);
+    const [audioStatus, setAudioStatus] = useState<Record<string, "idle" | "loading" | "ready" | "error">>({});
+    const [hasDialogueBoxesForAudio, setHasDialogueBoxesForAudio] = useState(false);
+    const [completeAudioStatus, setCompleteAudioStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
+    const [hasCompleteAudio, setHasCompleteAudio] = useState(false);
     const sections = useMemo(() => {
         if (loadedResults?.type=="characterBuilder"){
             return buildSections(

@@ -75,6 +75,7 @@ export type DialogueBoxScene = {
   sceneNumber: number;
   heading: string;
   characters: string[];
+  audio_url: string;
   dialogue_boxes: DialogueBox[],
 }
 
