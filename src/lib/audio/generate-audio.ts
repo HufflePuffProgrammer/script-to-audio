@@ -3,7 +3,7 @@ import { getElevenLabsClient } from "@/lib/elevenlabsClient";
 import { DialogueLine, DialogueBox, DialogueBoxScene } from "@/lib/types";
 import { narratorLabel } from "@/lib/constants";
 import { getSupabaseAdminClient } from "@/lib/supabaseServer";
-import { isDatabaseSceneUuid } from "@/lib/isDatabaseSceneUuid";
+import { isDatabaseUuid } from "@/lib/isDatabaseUuid";
 import { getPlayableStorageObjectUrl } from "@/lib/supabaseStoragePlayableUrl";
 import { Readable } from "node:stream";
 import { ReadableStream as WebReadableStream } from "node:stream/web";
@@ -139,7 +139,7 @@ const toBuffer = async (audio: unknown) => {
   throw new Error("Unsupported audio payload type from ElevenLabs");
 };
 
-export async function generateAudioFromDialogueBoxScene(dialogueBoxScene: DialogueBoxScene) {
+export async function generateAudioFromDialogueBoxScene(dialogueBoxScene: DialogueBoxScene,parsedScreenplayId: string) {
   try {
     const { scene_id, dialogue_boxes } = dialogueBoxScene;
     if (scene_id === undefined || scene_id === null || String(scene_id).trim() === "") {
@@ -148,6 +148,13 @@ export async function generateAudioFromDialogueBoxScene(dialogueBoxScene: Dialog
     const sceneKey = String(scene_id);
     if (!dialogue_boxes || !Array.isArray(dialogue_boxes) || dialogue_boxes.length === 0) {
       return { audio_url: "", error: "dialogue_boxes required" };
+    }
+    if (!parsedScreenplayId || parsedScreenplayId.trim() === "") {
+      return { audio_url: "", error: "parsed screenplay id required" };
+    }
+    const screenplayId = parsedScreenplayId.trim();
+    if (!isDatabaseUuid(screenplayId)) {
+      return { audio_url: "", error: "parsed screenplay id must be a uuid" };
     }
     const client = getElevenLabsClient();
     const voiceMap = buildVoiceMap(dialogue_boxes);
@@ -190,12 +197,13 @@ export async function generateAudioFromDialogueBoxScene(dialogueBoxScene: Dialog
 
     const audioUrl = storedUrl ?? dataUrl;
     if (supabase) {
-      if (!isDatabaseSceneUuid(sceneKey)) {
+      if (!isDatabaseUuid(sceneKey)) {
         console.warn(
           `Skipping audio_assets row: scene_id "${sceneKey}" is not a database uuid (expected scenes.id). Use a uuid or change audio_assets.scene_id to text — see docs/db-setup.md.`,
         );
       } else {
         const { error: persistError } = await supabase.from("audio_assets").insert({
+          screenplay_id: screenplayId,
           scene_id: sceneKey,
           audio_url: audioUrl,
         });

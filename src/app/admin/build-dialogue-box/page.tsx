@@ -148,7 +148,7 @@ const handleLoadParsedScreenplay = () =>{
   const stored = window.localStorage.getItem(PARSED_SCREENPLAY_RESULTS_KEY);
   if (!stored) return;
   const parsed = JSON.parse(stored);
- 
+ console.log("parsed screenplay:", parsed);
   setLoadedResults( {type: "parsedScreenplay", results: parsed})
   setPSResults(parsed);
   setStatus("Loaded parsed screenplay complete.");

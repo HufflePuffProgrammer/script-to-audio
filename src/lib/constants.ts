@@ -2,6 +2,7 @@ export const CHARACTER_BUILDER_RESULTS_KEY = "characterBuilderResults";
 export const PARSED_SCREENPLAY_RESULTS_KEY = "parsedScreenplayResults";
 export const DIALOGUE_BOXES_SCENES_KEY = "dialogueBoxesScenes";
 export const DIALOGUE_BOXES_AUDIO_KEY = "dialogueBoxesAudio";
+export const COMPLETE_AUDIO_KEY = "completeAudio";
 export const profilingSceneLimitDefault = 1;
 
 export const profilingSceneLimitOptions = [1, 2, 3];

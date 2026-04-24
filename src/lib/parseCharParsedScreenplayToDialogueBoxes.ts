@@ -5,7 +5,7 @@ export function parseCharParsedScreenplayToDialogueBoxes(CPResults: any, PSResul
     const scenes = PSResults.scenes;
     const dialogue_boxes_scenes: DialogueBoxScene[] = [];
     const characterVoiceIdsHashmap = arrayToHashmap(CPResults.characterVoiceIds);
-
+scenes.map((scene: any)=> console.log("2scene:", scene.id, scene.sceneNumber, scene.heading, scene.characters, scene.dialogue));
     scenes.forEach((scene: any, index: number) => {
         const dialogue_boxes: DialogueBox[] = [];
         scene.dialogue.forEach((box: any)=> {
@@ -28,12 +28,12 @@ export function parseCharParsedScreenplayToDialogueBoxes(CPResults: any, PSResul
             }   
         })
         dialogue_boxes_scenes.push({
-            scene_id: scene.sceneNumber,
+            scene_id: scene.id,
             sceneNumber: scene.sceneNumber,
             heading: scene.heading,
             characters: scene.characters,
             dialogue_boxes: dialogue_boxes,
-
+            audio_url: "",
         })
     });
     dialogue_boxes_scenes.forEach((scene: any) => {

@@ -1,8 +1,8 @@
 "use client";
 import Link from "next/link";
 
-import {  FormEvent, useState,  useMemo } from "react";
-import { DIALOGUE_BOXES_SCENES_KEY, CHARACTER_BUILDER_RESULTS_KEY, PARSED_SCREENPLAY_RESULTS_KEY, DIALOGUE_BOXES_AUDIO_KEY} from "@/lib/constants";
+import {  FormEvent, useEffect,useState,  useMemo  } from "react";
+import { DIALOGUE_BOXES_SCENES_KEY, CHARACTER_BUILDER_RESULTS_KEY, PARSED_SCREENPLAY_RESULTS_KEY, DIALOGUE_BOXES_AUDIO_KEY, COMPLETE_AUDIO_KEY} from "@/lib/constants";
 
 import {DialogueBoxScene, DialogueBox, Scene} from "@/lib/types";
 const API_URL = "/api/admin/build-complete-audio";
@@ -37,6 +37,7 @@ type ResultsShape =
   | ParsedScreenplayResults
   | DialogueBoxesScenesLoaded
   | AudioPerDialogueBoxesResults
+  | CompleteAudioResults
   | null;
 
 type Section = {
@@ -54,6 +55,7 @@ type LoadedResults =
 | {type: "parsedScreenplay",results: ParsedScreenplayResults}
 | { type: "dialogueBoxesScenes"; results: DialogueBoxesScenesLoaded }
 | {type: "audioPerDialogueBoxes", results: AudioPerDialogueBoxesResults}
+| {type: "completeAudio", results: CompleteAudioResults}
 | null;
 
 const buildSections = <TResult,>(
@@ -147,8 +149,10 @@ export default  function  BuildAudioPerDialogueBoxScene(){
     const [audioUrls, setAudioUrls] = useState<Record<string, string>>({});
     const [audioStatus, setAudioStatus] = useState<Record<string, "idle" | "loading" | "ready" | "error">>({});
     const [hasDialogueBoxesForAudio, setHasDialogueBoxesForAudio] = useState(false);
-    const [completeAudioStatus, setCompleteAudioStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
-    const [hasCompleteAudio, setHasCompleteAudio] = useState(false);
+    const [completeAudio, setCompleteAudio] = useState<string | undefined>("");
+    const [parsedScreenplayId,setParsedScreenplayId] = useState<string | null>(null);
+    console.log("build-complete-audio: parsedScreenplayId:", parsedScreenplayId);
+   
     const sections = useMemo(() => {
         if (loadedResults?.type=="characterBuilder"){
             return buildSections(
@@ -177,25 +181,35 @@ export default  function  BuildAudioPerDialogueBoxScene(){
         return [];
     },[loadedResults]);
 
+    useEffect(() => {
+        const stored = window.localStorage.getItem(COMPLETE_AUDIO_KEY);
+        if (!stored) return;
+        const parsed = JSON.parse(stored);
+        setLoadedResults({type: "completeAudio", results: parsed});
+        setCompleteAudio(parsed);
+
+        setHasText(true);
+        setStatus("Loaded complete audio complete.");
+    }, []);
     const handleClear = () =>{
         return null;
     }
     const handleLoadDialogueBoxesForAudio = () =>{
       console.log("Loading dialogue boxes for audio");
       setHasDialogueBoxesForAudio(true);
-      // const stored = window.localStorage.getItem(DIALOGUE_BOXES_SCENES_KEY);
-      // if (!stored) return;
-      // const raw: unknown = JSON.parse(stored);
-      // const parsed: DialogueBoxesScenesLoaded = Array.isArray(raw)
-      //   ? raw
-      //   : raw !== null &&
-      //       typeof raw === "object" &&
-      //       "dialogue_boxes_scenes" in raw &&
-      //       Array.isArray((raw as { dialogue_boxes_scenes: unknown }).dialogue_boxes_scenes)
-      //     ? (raw as { dialogue_boxes_scenes: DialogueBoxScene[] }).dialogue_boxes_scenes
-      //     : [];
-
-      // setDialogueBoxesScenes(parsed);
+      const stored = window.localStorage.getItem(DIALOGUE_BOXES_AUDIO_KEY);
+      if (!stored) return;
+      const raw: unknown = JSON.parse(stored);
+      const parsed: DialogueBoxesScenesLoaded = Array.isArray(raw)
+        ? raw
+        : raw !== null &&
+            typeof raw === "object" &&
+            "dialogue_boxes_scenes" in raw &&
+            Array.isArray((raw as { dialogue_boxes_scenes: unknown }).dialogue_boxes_scenes)
+          ? (raw as { dialogue_boxes_scenes: DialogueBoxScene[] }).dialogue_boxes_scenes
+          : [];
+          parsed.map((s)=> console.log("NEW audio dialogue boxes:", s.scene_id, s.heading, s.sceneNumber,s.audio_url));
+      setDialogueBoxesScenes(parsed);
       // TEMPORARY for testing
       const AudioPerDialogueBoxesResults: AudioPerDialogueBoxesResults = {
         scene_id: "123",
@@ -213,7 +227,7 @@ export default  function  BuildAudioPerDialogueBoxScene(){
         })),
       }
        setLoadedResults({type: "audioPerDialogueBoxes", results: AudioPerDialogueBoxesResults}); 
-      // setHasText(true);
+       setHasText(true);
        setStatus("Loaded build audio for dialogue boxes complete.");
     }
     const handleLoadCharacterBuilder = () => {
@@ -230,6 +244,7 @@ export default  function  BuildAudioPerDialogueBoxScene(){
         if (!stored) return;
         const parsed = JSON.parse(stored);
         setLoadedResults({type: "parsedScreenplay", results: parsed});
+        setParsedScreenplayId( parsed.screenplay_id);
         setHasText(true);
         setStatus("Loaded parsed screenplay complete.");
         setHasDialogueBoxesForAudio(false);
@@ -263,16 +278,15 @@ export default  function  BuildAudioPerDialogueBoxScene(){
             },
             body: JSON.stringify({
                 dialogue_boxes_scenes: dialogueBoxesScenes,
+                parsedScreenplayId: parsedScreenplayId ?? null,
             })
         });
         const data = await result.json();
         setResults(data);
-        window.localStorage.setItem(DIALOGUE_BOXES_AUDIO_KEY,JSON.stringify(data));
-        console.log("Server response", data);
-        setStatus("Built audio per dialogue box complete.");
-        if (!result.ok){ 
-            console.error("API error");
-        }
+        console.log("handleSubmit build complete audio complete.");
+        // if (!result.ok){ 
+        //     console.error("API error");
+        // }
         setHasDialogueBoxesForAudio(false);
     }
 

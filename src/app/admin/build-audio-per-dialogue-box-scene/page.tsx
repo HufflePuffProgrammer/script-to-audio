@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 
-import {  FormEvent, useState,  useMemo } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { DIALOGUE_BOXES_SCENES_KEY, CHARACTER_BUILDER_RESULTS_KEY, PARSED_SCREENPLAY_RESULTS_KEY, DIALOGUE_BOXES_AUDIO_KEY} from "@/lib/constants";
 
 import {DialogueBoxScene, DialogueBox, Scene} from "@/lib/types";
@@ -23,6 +23,7 @@ type CharacterBuilderResults = {
   };
   
   type ParsedScreenplayResults = {
+    screenplay_id?: string;
     characterFirstScene?: Record<string, number>;
     sceneCount?: number;
     scenes?: Array<{
@@ -116,6 +117,11 @@ const characterBuilderSectionConfigs: SectionConfig<CharacterBuilderResults>[] =
 
 const parsedScreenplaySectionConfigs: SectionConfig<ParsedScreenplayResults>[] = [
   {
+    title: "Screenplay ID",
+    selectItems: (results) =>
+      results.screenplay_id ? [results.screenplay_id] : [],
+  },
+  {
     title: "Character First Scene",
     selectItems: (results) =>
       results.characterFirstScene
@@ -149,6 +155,7 @@ export default  function  BuildAudioPerDialogueBoxScene(){
     const [audioUrls, setAudioUrls] = useState<Record<string, string>>({});
     const [audioStatus, setAudioStatus] = useState<Record<string, "idle" | "loading" | "ready" | "error">>({});
     const [hasDialogueBoxesForAudio, setHasDialogueBoxesForAudio] = useState(false);
+    const [parsedScreenplayId,setParsedScreenplayId] = useState<string | null>(null);
     const sections = useMemo(() => {
         if (loadedResults?.type=="characterBuilder"){
             return buildSections(
@@ -177,6 +184,14 @@ export default  function  BuildAudioPerDialogueBoxScene(){
         return [];
     },[loadedResults]);
 
+    useEffect(() => {
+      if (!hasDialogueBoxesForAudio || dialogueBoxesScenes.length === 0) return;
+      window.localStorage.setItem(
+        DIALOGUE_BOXES_AUDIO_KEY,
+        JSON.stringify(dialogueBoxesScenes),
+      );
+    }, [dialogueBoxesScenes, hasDialogueBoxesForAudio]);
+
     const handleClear = () =>{
       console.log("Clearing all data");
         return null;
@@ -199,12 +214,11 @@ export default  function  BuildAudioPerDialogueBoxScene(){
       setDialogueBoxesScenes(parsed);
       setLoadedResults({type: "dialogueBoxesScenes", results: parsed}); 
       setHasDialogueBoxesForAudio(true);
-      console.log("dialoguge boxes:",parsed);
 
       const AudioPerDialogueBoxesResults: AudioPerDialogueBoxesResults = {
         scene_id: "123",
         heading: "123",
-        scenes: dialogueBoxesScenes.map((scene) => ({
+        scenes: parsed.map((scene) => ({
           id: scene.scene_id,
           dialogue: scene.dialogue_boxes.map((dialogue) => ({
             character: dialogue.character_name,
@@ -218,7 +232,7 @@ export default  function  BuildAudioPerDialogueBoxScene(){
         })),
       }
        setLoadedResults({type: "audioPerDialogueBoxes", results: AudioPerDialogueBoxesResults}); 
-      // setHasText(true);
+       setHasText(true);
        setStatus("Loaded build audio for dialogue boxes complete.");
     }
     const handleLoadCharacterBuilder = () => {
@@ -235,12 +249,14 @@ export default  function  BuildAudioPerDialogueBoxScene(){
         if (!stored) return;
         const parsed = JSON.parse(stored);
         setLoadedResults({type: "parsedScreenplay", results: parsed});
+        setParsedScreenplayId( parsed.screenplay_id);
         setHasText(true);
         setStatus("Loaded parsed screenplay complete.");
         setHasDialogueBoxesForAudio(false);
       }
     const handleLoadDialogueBoxesScenes = ()=> {
         const stored = window.localStorage.getItem(DIALOGUE_BOXES_SCENES_KEY);
+
         if (!stored) return;
         const raw: unknown = JSON.parse(stored);
         const parsed: DialogueBoxesScenesLoaded = Array.isArray(raw)
@@ -256,6 +272,7 @@ export default  function  BuildAudioPerDialogueBoxScene(){
         setLoadedResults({type: "dialogueBoxesScenes", results: parsed}); 
         setHasText(true);
         setStatus("Loaded dialogue boxes scenes complete.");
+
         setHasDialogueBoxesForAudio(false);
     }
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -284,12 +301,11 @@ export default  function  BuildAudioPerDialogueBoxScene(){
 
     const generateAudio = async (scene: DialogueBoxScene) => {
       setAudioStatus((prev) => ({ ...prev, [scene.scene_id]: "loading" }));
-      console.log("generateAudio: BEFORE");
       try {
         const response = await fetch(GENERATE_SCENE_AUDIO_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ dialogueBoxScene: scene }),
+          body: JSON.stringify({ dialogueBoxScene: scene, parsedScreenplayId: parsedScreenplayId ?? null }),
         });
        
         const data: { audio_url?: string; error?: string | null } = await response.json();
@@ -307,10 +323,6 @@ export default  function  BuildAudioPerDialogueBoxScene(){
           return next;
         });
         setAudioStatus((prev) => ({ ...prev, [scene.scene_id]: "ready" }));
-        console.log("NEW scene.scene_id:", scene.scene_id, "NEW AUDIO URL:", data.audio_url);
-        dialogueBoxesScenes.map((s)=> console.log("NEW dialogue boxes:", s.scene_id, s.heading, s.sceneNumber,s.audio_url));
-        window.localStorage.setItem(DIALOGUE_BOXES_AUDIO_KEY,JSON.stringify(data));
-        //console.log("dialoguge boxes:",dialogueBoxesScenes);
       } catch (error) {
         setAudioStatus((prev) => ({ ...prev, [scene.scene_id]: "error" }));
       }
