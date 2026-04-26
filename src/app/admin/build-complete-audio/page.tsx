@@ -14,7 +14,9 @@ type AudioPerDialogueBoxesResults = {
   scenes: Scene[];
 }
 /** Matches localStorage: build-dialogue-box saves `JSON.stringify(dialogue_boxes_scenes)` → `DialogueBoxScene[]`. */
-
+type CompleteAudioResults = {
+  completeAudio?: string;
+}
 type DialogueBoxesScenesLoaded = DialogueBoxScene[];
 type CharacterBuilderResults = {
     profiles?: any[];
@@ -68,6 +70,14 @@ const buildSections = <TResult,>(
     items: config.selectItems(results),
   }));
 };
+
+const completeAudioSectionConfigs: SectionConfig<CompleteAudioResults>[]=
+[
+  {
+  title: "Complete Audio",
+  selectItems: (results)=> results.completeAudio ?[results.completeAudio] : [],
+  }
+]
 
 const audioPerDialogueBoxesSectionConfigs: SectionConfig<AudioPerDialogueBoxesResults>[] = 
 [
@@ -150,9 +160,9 @@ export default  function  BuildAudioPerDialogueBoxScene(){
     const [audioStatus, setAudioStatus] = useState<Record<string, "idle" | "loading" | "ready" | "error">>({});
     const [hasDialogueBoxesForAudio, setHasDialogueBoxesForAudio] = useState(false);
     const [completeAudio, setCompleteAudio] = useState<string | undefined>("");
+    const [hasCompleteAudio, setHasCompleteAudio] = useState(false);
     const [parsedScreenplayId,setParsedScreenplayId] = useState<string | null>(null);
-    console.log("build-complete-audio: parsedScreenplayId:", parsedScreenplayId);
-   
+    
     const sections = useMemo(() => {
         if (loadedResults?.type=="characterBuilder"){
             return buildSections(
@@ -177,16 +187,24 @@ export default  function  BuildAudioPerDialogueBoxScene(){
               loadedResults.results,
               audioPerDialogueBoxesSectionConfigs,
           );
+         }
+        if (loadedResults?.type==="completeAudio"){
+          return buildSections(
+            loadedResults.results,
+            completeAudioSectionConfigs,
+          );
       }
-        return [];
+       return [];
     },[loadedResults]);
 
     useEffect(() => {
         const stored = window.localStorage.getItem(COMPLETE_AUDIO_KEY);
         if (!stored) return;
         const parsed = JSON.parse(stored);
-        setLoadedResults({type: "completeAudio", results: parsed});
-        setCompleteAudio(parsed);
+        const normalizedCompleteAudio =
+          typeof parsed === "string" ? parsed : (parsed as CompleteAudioResults)?.completeAudio ?? "";
+        setLoadedResults({type: "completeAudio", results: { completeAudio: normalizedCompleteAudio }});
+        setCompleteAudio(normalizedCompleteAudio);
 
         setHasText(true);
         setStatus("Loaded complete audio complete.");
@@ -195,7 +213,7 @@ export default  function  BuildAudioPerDialogueBoxScene(){
         return null;
     }
     const handleLoadDialogueBoxesForAudio = () =>{
-      console.log("Loading dialogue boxes for audio");
+
       setHasDialogueBoxesForAudio(true);
       const stored = window.localStorage.getItem(DIALOGUE_BOXES_AUDIO_KEY);
       if (!stored) return;
@@ -210,6 +228,11 @@ export default  function  BuildAudioPerDialogueBoxScene(){
           : [];
           parsed.map((s)=> console.log("NEW audio dialogue boxes:", s.scene_id, s.heading, s.sceneNumber,s.audio_url));
       setDialogueBoxesScenes(parsed);
+      setAudioUrls(parsed.reduce((acc,s)=> {
+        acc[s.scene_id] = s.audio_url ?? "";
+        return acc;
+      }, {} as Record<string, string>));
+
       // TEMPORARY for testing
       const AudioPerDialogueBoxesResults: AudioPerDialogueBoxesResults = {
         scene_id: "123",
@@ -282,17 +305,23 @@ export default  function  BuildAudioPerDialogueBoxScene(){
             })
         });
         const data = await result.json();
-        setResults(data);
-        console.log("handleSubmit build complete audio complete.");
-        // if (!result.ok){ 
-        //     console.error("API error");
-        // }
+        if (!result.ok){ 
+             console.error("API error");
+        }
+        if (!data.completeAudio || data.completeAudio.trim() === ""){
+            console.error("No complete audio provided.");
+            return;
+        }
+        setLoadedResults({type: "completeAudio", results: { completeAudio: data.completeAudio }}); 
+        window.localStorage.setItem(COMPLETE_AUDIO_KEY,JSON.stringify({completeAudio: data.completeAudio}));
+        setStatus("Loaded full complete audio.");
+        setHasCompleteAudio(true);
         setHasDialogueBoxesForAudio(false);
     }
 
     const generateAudio = async (scene: DialogueBoxScene) => {
       setAudioStatus((prev) => ({ ...prev, [scene.scene_id]: "loading" }));
-      console.log("generateAudio: BEFORE");
+
       try {
         const response = await fetch(GENERATE_SCENE_AUDIO_URL, {
           method: "POST",
@@ -383,7 +412,6 @@ export default  function  BuildAudioPerDialogueBoxScene(){
                 aria-disabled={!hasText}
                 tabIndex={hasText ? 0 : -1}
                 type="submit"
-            onClick={handleSubmit}
               >
                 5. Build Complete Audio 
               </button>             
@@ -405,6 +433,38 @@ export default  function  BuildAudioPerDialogueBoxScene(){
    
           </div>
         )}
+{(loadedResults != null) && (hasCompleteAudio) && (!hasDialogueBoxesForAudio) && (
+  <div className="space-y-6">
+ <section key={sections[0].title} className="rounded-3xl bg-white p-6 shadow-md ring-1 ring-slate-200">
+      <h2 className="text-lg font-semibold text-slate-900">{sections[0].title}</h2>
+      <div className="mt-4 space-y-3 text-sm text-slate-700">
+         
+    <div
+        key={completeAudio}
+        className="space-y-2 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200"
+      >
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold text-slate-900">
+            Complete Audio
+          </p>
+          <span className="text-xs text-slate-500">Complete Audio <a href={completeAudio} download>Download</a></span>
+        </div>
+        <div className="h-2 w-full overflow-hidden rounded-full bg-white ring-1 ring-slate-200">
+          <div className="h-full w-[45%] rounded-full bg-gradient-to-r from-indigo-500 to-purple-500" />
+        </div>
+          completeAudio:<audio
+            key={completeAudio}
+            controls
+            className="mt-2 w-full"
+            crossOrigin="anonymous"
+          >
+            <source src={completeAudio} type="audio/mpeg" />
+          </audio>
+      </div>
+     </div>
+    </section>
+    </div>
+)}
          {(loadedResults !=null) && !hasDialogueBoxesForAudio && (  
           <div className="space-y-6">
             {sections.map((section) => (
@@ -429,7 +489,6 @@ export default  function  BuildAudioPerDialogueBoxScene(){
         ) }
         {(loadedResults!=null) && (hasDialogueBoxesForAudio) &&(
             <div className="space-y-6">
-
                 <section key={sections[0].title} className="rounded-3xl bg-white p-6 shadow-md ring-1 ring-slate-200">
                   <h2 className="text-lg font-semibold text-slate-900">{sections[0].title}</h2>
                   <div className="mt-4 space-y-3 text-sm text-slate-700">

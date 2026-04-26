@@ -19,7 +19,7 @@ export async function POST (request: Request){
         if (audio_url =="" || error){
             return NextResponse.json({error:"Failed to build complete audio."},{status:500});
         }
-        return NextResponse.json({message: "Build complete audio complete."}, {status:200});
+        return NextResponse.json({completeAudio: audio_url}, {status:200});
     }
     catch(error){
         console.error("Failed to build: API build-complete-audio error:", error);

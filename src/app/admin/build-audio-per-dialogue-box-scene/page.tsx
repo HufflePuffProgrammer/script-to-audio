@@ -197,7 +197,6 @@ export default  function  BuildAudioPerDialogueBoxScene(){
         return null;
     }
     const handleLoadDialogueBoxesForAudio = () =>{
-      console.log("Loading dialogue boxes for audio");
 
       const stored = window.localStorage.getItem(DIALOGUE_BOXES_SCENES_KEY);
       if (!stored) return;
@@ -272,8 +271,8 @@ export default  function  BuildAudioPerDialogueBoxScene(){
         setLoadedResults({type: "dialogueBoxesScenes", results: parsed}); 
         setHasText(true);
         setStatus("Loaded dialogue boxes scenes complete.");
-
         setHasDialogueBoxesForAudio(false);
+       
     }
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -290,8 +289,7 @@ export default  function  BuildAudioPerDialogueBoxScene(){
         const data = await result.json();
         setResults(data);
         window.localStorage.setItem(DIALOGUE_BOXES_AUDIO_KEY,JSON.stringify(data));
-        console.log("Submitted build audio per dialogue box complete.");
-        console.log("Server response", data);
+
         setStatus("Built audio per dialogue box complete.");
         if (!result.ok){ 
             console.error("API error");
@@ -322,6 +320,7 @@ export default  function  BuildAudioPerDialogueBoxScene(){
           const next = prev.map((s) => s.scene_id === scene.scene_id ? { ...s, audio_url: data.audio_url! } : s);
           return next;
         });
+        window.localStorage.setItem(DIALOGUE_BOXES_AUDIO_KEY,JSON.stringify(dialogueBoxesScenes));
         setAudioStatus((prev) => ({ ...prev, [scene.scene_id]: "ready" }));
       } catch (error) {
         setAudioStatus((prev) => ({ ...prev, [scene.scene_id]: "error" }));
