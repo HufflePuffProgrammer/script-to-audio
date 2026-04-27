@@ -316,10 +316,12 @@ export default  function  BuildAudioPerDialogueBoxScene(){
           const next = { ...prev, [scene.scene_id]: data.audio_url! };
           return next;
         });
+        console.log("audio URLS", data.audio_url);
         setDialogueBoxesScenes((prev) => {
           const next = prev.map((s) => s.scene_id === scene.scene_id ? { ...s, audio_url: data.audio_url! } : s);
           return next;
         });
+        console.log("DIALOGUE BOXES AUDIO_KEY:", dialogueBoxesScenes);
         window.localStorage.setItem(DIALOGUE_BOXES_AUDIO_KEY,JSON.stringify(dialogueBoxesScenes));
         setAudioStatus((prev) => ({ ...prev, [scene.scene_id]: "ready" }));
       } catch (error) {
@@ -483,7 +485,8 @@ export default  function  BuildAudioPerDialogueBoxScene(){
                         </div>
                       )
                     )
-                }                  </div>
+                }                  
+                </div>
                 </section>
              </div>
         )
