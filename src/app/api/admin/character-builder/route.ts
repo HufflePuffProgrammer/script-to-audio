@@ -7,9 +7,9 @@ import {buildVoicePrompt} from "./step-4-buildVoicePrompt";
 import {buildVoiceRankingPrompt} from "./step-5-2-VoiceRankingPrompt";
 import {rankVoicesWithClaude} from "./step-5-3-RankVoicesWithClaude";
 import {assignVoiceToCharacter} from "./step-5-4-AssignVoiceToCharacter";
-import {AssignElevenLabsAgent} from "./step-5-1-AssignElevenLabsAgent";
-import { AvailableVoices, getAvailableVoices } from "../utils";
-import { profile } from "node:console";
+import {voiceIdExists} from "./step-5-1-AssignElevenLabsAgent";
+import { getAvailableVoices } from "@/lib/audio/getAvailableVoices";
+import { AvailableVoices } from "@/lib/types";
 
 import { CharacterVoiceIds } from "@/lib/types";
 
@@ -19,11 +19,7 @@ import { CharacterVoiceIds } from "@/lib/types";
       if (!text || typeof text !== "string" || !text.trim()) {
         return NextResponse.json({ error: "No screenplay text provided." }, { status: 400 });
       }
-      //5. Check if audio exists in Supabase
-      //const audioUrl = await AssignElevenLabsAgent(characterName,voicePrompt);
-
-      //5-1 Get Available Voices
-      const availableVoices = await getAvailableVoices();
+      const voiceId = await getAvailableVoices();
       
       //1. parse screenplay to character profile
       const parsedScreenplay = parseScriptToCharInput(text);
@@ -45,7 +41,7 @@ import { CharacterVoiceIds } from "@/lib/types";
     
         profiles.push(profile);
         // step-5-1-AssignElevenLabsAgent -Upsert into DB
-        
+        const voiceId = await voiceIdExists(characterInput.character);
         // step-5-2 VoiceRankingPrompt
         const voiceRankingPrompt = await buildVoiceRankingPrompt(profile, availableVoices);
  
@@ -61,6 +57,7 @@ import { CharacterVoiceIds } from "@/lib/types";
 
         );
         //6- Assign Voice to Character. Upsert to database
+        // TBD: Add Supabase caching to avoid assigning duplicate voices
         //const voiceId = await assignVoiceToCharacter(characterName, profile, bestRankedVoice.best_voice_id, bestRankedVoice.reason);
      
       }

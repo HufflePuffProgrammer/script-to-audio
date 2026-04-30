@@ -1,16 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 
-export interface CharacterProfile {
-  name: string;
-  age: string;
-  gender: string;
-  traits: string;
-  voiceStyle: string;
-  speechPattern: string;
-  tone: string;
-  confidence?: string;
-}
-
+import {CharacterProfile} from "@/lib/types";
 /**
  * Generates a character profile using Anthropic's Claude model.
  * 
