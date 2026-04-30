@@ -37,10 +37,12 @@ export type Screenplay = {
 
 export type CharacterProfile = {
   name: string;
-  age?: string;
+  age: string;
   gender?: string;
   traits?: string;
   voiceStyle?: string;
+  speechPattern?: string;
+  tone?: string;
   confidence?: string;
 };
 
@@ -52,6 +54,12 @@ export type CharacterInput = {
 };
 export type AudioStatus = "idle" | "generating" | "ready" | "error";
 
+export type AvailableVoices = [{
+    voice_id: string;
+    description: string;
+    labels: string;
+  }]
+  
 export type CharacterVoiceIds = [
   {
     character_name: string;

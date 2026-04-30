@@ -10,16 +10,21 @@ import { getSupabaseAdminClient } from "@/lib/supabaseServer";
  * 
  * TODO: Add Supabase caching to avoid creating duplicate agents
  */
-export async function AssignElevenLabsAgent(
+export async function voiceIdExists(
   characterName: string,
 
 ): Promise<string> {
   // TODO: 1. Check if agent already exists in Supabase
-  // const { data: existing } = await getSupabaseAdminClient()
-  //   .from("character_voices")
-  //   .select("*")
-  //   .eq("character_name", characterName);
+  /*
+  Table, character_voices, name, voice_id, screenplay_id
+  
+  const { data: existing } = await getSupabaseAdminClient()
+    .from("character_voices")
+    .select("*")
+    .eq("character_name", characterName);
 
-  // return existing?.[0]?.voice_id ?? "";
-  return "";
+  return existing?.[0]?.voice_id ?? "";
+*/
+console.log("voiceIdExists: " + characterName);
+return "";
 }

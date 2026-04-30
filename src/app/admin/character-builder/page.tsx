@@ -4,7 +4,7 @@ import Link from "next/link";
 
 import { CHARACTER_BUILDER_RESULTS_KEY, useScriptText } from "@/lib/useScriptText";
 import { ChangeEvent, FormEvent, useState, useEffect, useMemo } from "react";
-
+import { CharacterVoiceIds, CharacterProfile } from "@/lib/types";
 const API_URL_CHARACTER_BUILDER = "/api/admin/character-builder";
 
 type DialogueBoxScenesResults = {
@@ -16,8 +16,8 @@ type DialogueBoxScenesResults = {
   }>;
 }
 type CharacterBuilderResults = {
-  profiles?: any[];
-  characterVoiceIds?: any[];
+  profiles?: CharacterProfile[] | null;
+  characterVoiceIds?: CharacterVoiceIds[] | null;
   profilePrompts?: string[];
 };
 type ParsedScreenplayResults = {
@@ -79,7 +79,7 @@ const buildSections = <TResult,>(
     selectItems: (results)=> results.profiles ?? []
   },
   {
-    title: "Best Ranked Voices",
+    title: "Best Ranked Voices1",
     selectItems: (results)=> results.characterVoiceIds ?? []
   },
   {
