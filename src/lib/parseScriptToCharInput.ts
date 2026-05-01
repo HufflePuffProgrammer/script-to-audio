@@ -38,7 +38,7 @@ const detectTitlePageSkip = (lines: string[]) => {
   }
   return 0;
 };
-
+/* INSERT SCREENPLAY INTO SUPABASE */
 export function parseScriptToCharInput(text: string) {
   const lines = text.split(/\r?\n/);
   const skip = detectTitlePageSkip(lines);
@@ -126,6 +126,7 @@ export function parseScriptToCharInput(text: string) {
   if (sceneCharacterOrder.length) {
     flushScene();
   }
+/* INSERT Character Inputs INTO SUPABASE */
 
   return characterInputs;
 }

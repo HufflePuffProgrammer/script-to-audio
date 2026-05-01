@@ -1,0 +1,36 @@
+import { getSupabaseAdminClient } from "@/lib/supabaseServer";
+
+/**
+ * Persist Claude-ranked voice choice for a character (Supabase upsert).
+ */
+export async function upsertVoiceToCharacter(
+  characterName: string,
+  rankedVoiceId: string,
+  description: string,
+  labels: string,
+  reason: string,
+): Promise<string> {
+  const supabase = getSupabaseAdminClient();
+  if (!supabase) {
+    throw new Error("Supabase is not configured");
+  }
+
+  const { data, error } = await supabase
+    .from("character_voices")
+    .upsert({
+      character: characterName,
+      voice_id: rankedVoiceId,
+      description,
+      labels,
+      reason,
+    })
+    .select("id")
+    .single();
+
+  if (error) {
+    console.error("upsertVoiceToCharacter:", error);
+    throw error;
+  }
+
+  return data?.id != null ? String(data.id) : rankedVoiceId;
+}
