@@ -19,7 +19,7 @@ import { CharacterVoiceIds } from "@/lib/types";
       if (!text || typeof text !== "string" || !text.trim()) {
         return NextResponse.json({ error: "No screenplay text provided." }, { status: 400 });
       }
-      const voiceId = await getAvailableVoices();
+      const availableVoices = await getAvailableVoices();
       
       //1. parse screenplay to character profile
       const parsedScreenplay = parseScriptToCharInput(text);
