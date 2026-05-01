@@ -1,7 +1,7 @@
 // step5-buildVoiceRankingPrompt.js
 
-import { CharacterProfile, AvailableVoices } from "../utils";
-export async function buildVoiceRankingPrompt(characterProfile : CharacterProfile, availableVoices : AvailableVoices[]) {
+import { CharacterProfile, AvailableVoices } from "@/lib/types";
+export async function buildVoiceRankingPrompt(characterProfile : CharacterProfile, availableVoices : AvailableVoices) {
     return `
   You are selecting the best text-to-speech voice for a film character.
   
