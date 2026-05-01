@@ -60,15 +60,13 @@ export type AvailableVoices = [{
     labels: string;
   }]
   
-export type CharacterVoiceIds = [
-  {
-    character_name: string;
-    voice_id: string;
-    description: string;
-    labels: string;
-    reason: string;
-  }
-]
+export type CharacterVoiceIds = {
+  character_name: string;
+  voice_id: string;
+  description: string;
+  labels: string;
+  reason: string;
+};
 
 export type DialogueBox = {
   character_name: string,
