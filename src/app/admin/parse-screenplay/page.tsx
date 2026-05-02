@@ -25,7 +25,7 @@ export default function ParseScreenplay() {
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const [isExtracting, setIsExtracting] = useState(false);
   const [results, setResults] = useState<ResultsShape | null> (null);
-
+  const [screenplayId, setScreenplayId] = useState<string | null>(null);
   useEffect(() => {
     const stored = window.localStorage.getItem(PARSED_SCREENPLAY_RESULTS_KEY);
     if (stored) {
@@ -79,15 +79,16 @@ export default function ParseScreenplay() {
         }),
       });
 
-        if (!response.ok) {
-          throw new Error("Request failed");
-        }
+      if (!response.ok) {
+        throw new Error("Request failed");
+      }
 
       const data = await response.json();
 
       console.log("Server response:", data);
       window.localStorage.setItem(PARSED_SCREENPLAY_RESULTS_KEY, JSON.stringify(data));
       setResults(data);
+      setScreenplayId(data.screenplay_id);
       setStatus("Parsed screenplay into dialogue boxes.");
       } catch (error) {
         console.error(error);
@@ -145,13 +146,13 @@ export default function ParseScreenplay() {
           });
           return buffer.join("");
         })();
-        console.log("normalizedLines:", pageIndex, normalizedLines);
-        console.log("normalizedPageText:", pageIndex, JSON.stringify(normalizedPageText));
-        console.log("pageText:", JSON.stringify(pageText));
+        //console.log("normalizedLines:", pageIndex, normalizedLines);
+        //console.log("normalizedPageText:", pageIndex, JSON.stringify(normalizedPageText));
+       // console.log("pageText:", JSON.stringify(pageText));
         extractedText += `${pageText}\n`;
         normalizedExtractedText += `${normalizedPageText}\n`;
       }
-      console.log("extractedText:",extractedText);
+      ////console.log("extractedText:",extractedText);
       console.log("normalizedExtractedText:", normalizedExtractedText);
       setText(normalizedExtractedText);
       setUploadStatus("PDF text extracted successfully.");

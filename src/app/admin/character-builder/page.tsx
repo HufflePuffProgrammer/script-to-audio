@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-
-import { CHARACTER_BUILDER_RESULTS_KEY, useScriptText } from "@/lib/useScriptText";
+import { CHARACTER_BUILDER_RESULTS_KEY,PARSED_SCREENPLAY_RESULTS_KEY } from "@/lib/constants";
+import { useScriptText } from "@/lib/useScriptText";
 import { ChangeEvent, FormEvent, useState, useEffect, useMemo } from "react";
 import { CharacterVoiceIds, CharacterProfile } from "@/lib/types";
 const API_URL_CHARACTER_BUILDER = "/api/admin/character-builder";
@@ -21,6 +21,7 @@ type CharacterBuilderResults = {
   profilePrompts?: string[];
 };
 type ParsedScreenplayResults = {
+  screenplay_id?: string;
   characterFirstScene?: Record<string, number>;
   sceneCount?: number;
   scenes?: Array<{
@@ -34,7 +35,11 @@ type ParsedScreenplayResults = {
     }>;
   }>;
 }
-type ResultsShape = DialogueBoxScenesResults | CharacterBuilderResults | ParsedScreenplayResults | null;
+type ResultsShape = 
+| DialogueBoxScenesResults 
+| CharacterBuilderResults 
+| ParsedScreenplayResults 
+| null;
 
 type LoadedResults = 
 | {type: "characterBuilder", results: CharacterBuilderResults}
@@ -91,6 +96,12 @@ const buildSections = <TResult,>(
  =
  [
   {
+    title: "Screenplay ID",
+    selectItems: (results) =>
+      results.screenplay_id ? [results.screenplay_id] : [],
+  },
+  {
+    
     title: "Character First Scene",
     selectItems: (results)=> results.characterFirstScene 
     ? Object.entries(results.characterFirstScene).map(([character, sceneNumber])=> ({
@@ -116,7 +127,8 @@ const buildSections = <TResult,>(
   const [isExtracting, setIsExtracting] = useState(false);
   const [results, setResults] = useState<ResultsShape | null>(null);
   const [loadedResults, setLoadedResults ] = useState<LoadedResults>(null);
- 
+  const [screenplayId, setScreenplayId] = useState<string | null>(null);
+  
   useEffect(() => {
     const stored = window.localStorage.getItem(CHARACTER_BUILDER_RESULTS_KEY);
     if (stored) {
@@ -149,6 +161,18 @@ const buildSections = <TResult,>(
     return [];
   }, [loadedResults]);
 
+
+  const handleLoadParsedScreenplay = () => {
+    const stored = window.localStorage.getItem(PARSED_SCREENPLAY_RESULTS_KEY);
+    if (!stored) return;
+    const parsed = JSON.parse(stored);
+    setLoadedResults({type: "parsedScreenplay", results: parsed});
+    setScreenplayId( parsed.screenplay_id);
+
+    setStatus("Loaded parsed screenplay complete.");
+
+  }
+
   const handleClear = () => {
     clearCharacterBuilder();
     setResults(null);
@@ -167,6 +191,7 @@ const buildSections = <TResult,>(
         },
         body: JSON.stringify({
           text,
+          screenplayId,
         }),
       });
 
@@ -299,9 +324,16 @@ const buildSections = <TResult,>(
                 tabIndex={hasText ? 0 : -1}
                 type="submit"
               >
-                Build Character
+                1. Build Character
               </button>
-
+              <button
+              className="rounded-full bg-[#f9cf00] px-4 py-2 text-sm font-semibold text-[#1b1b1b] shadow-md transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
+              aria-disabled={!hasText}
+              onClick={handleLoadParsedScreenplay}
+              type="button"
+              >
+                2. Load Parsed Screenplay 
+              </button>
             </div>
           </div>
           {status && (

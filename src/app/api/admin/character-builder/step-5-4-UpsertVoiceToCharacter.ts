@@ -4,6 +4,7 @@ import { getSupabaseAdminClient } from "@/lib/supabaseServer";
  * Persist Claude-ranked voice choice for a character (Supabase upsert).
  */
 export async function upsertVoiceToCharacter(
+  screenplayId: string,
   characterName: string,
   rankedVoiceId: string,
   description: string,
@@ -18,6 +19,7 @@ export async function upsertVoiceToCharacter(
   const { data, error } = await supabase
     .from("character_voices")
     .upsert({
+      screenplay_id: screenplayId,
       character: characterName,
       voice_id: rankedVoiceId,
       description,
