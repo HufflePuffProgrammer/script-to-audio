@@ -13,7 +13,7 @@ import { CharacterVoiceIds } from "@/lib/types";
 
   export async function POST(request: Request) {
     try {
-      const { text } = await request.json();
+      const { text,screenplayId } = await request.json();
       if (!text || typeof text !== "string" || !text.trim()) {
         return NextResponse.json({ error: "No screenplay text provided." }, { status: 400 });
       }
@@ -26,7 +26,7 @@ import { CharacterVoiceIds } from "@/lib/types";
       const profiles = [];
       const characterVoiceIds: CharacterVoiceIds[] = [];
       const profilePrompts = [];
-      
+      console.log("screenplayId:",screenplayId);
       for (const characterInput of parsedScreenplay) {
         const profilePrompt = buildCharacterProfilingPrompt(characterInput);
         profilePrompts.push(profilePrompt);
@@ -58,15 +58,16 @@ import { CharacterVoiceIds } from "@/lib/types";
         });
         //6- Assign Voice to Character. Upsert to database
         // TBD: Add Supabase caching to avoid assigning duplicate voices
-        /*
+        
         await upsertVoiceToCharacter(
+          screenplayId,
           characterInput.character,
           bestRankedVoice.best_voice_id,
           bestRankedVoice.description,
           bestRankedVoice.labels,
           bestRankedVoice.reason,
         );
-     */
+    
       }
       return NextResponse.json({profiles,characterVoiceIds, profilePrompts });
     } catch (error) {
