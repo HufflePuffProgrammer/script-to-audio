@@ -4,46 +4,28 @@ import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { DIALOGUE_BOXES_SCENES_KEY, CHARACTER_BUILDER_RESULTS_KEY, PARSED_SCREENPLAY_RESULTS_KEY, DIALOGUE_BOXES_AUDIO_KEY} from "@/lib/constants";
 
-import {DialogueBoxScene, DialogueBox, Scene} from "@/lib/types";
+import {
+  DialogueBoxScene,
+  DialogueBox,
+  Scene,
+  CharacterBuilderResults,
+  ParsedScreenplayResults,
+  ResultsShape,
+  Section,
+} from "@/lib/types";
+
 const API_URL = "/api/admin/build-audio-per-dialogue-box-scene";
 const GENERATE_SCENE_AUDIO_URL = "/api/admin/generate-dialogue-box-scene-audio";
 
+/** Matches localStorage: build-dialogue-box saves `JSON.stringify(dialogue_boxes_scenes)` → `DialogueBoxScene[]`. */
+type DialogueBoxesScenesLoaded = DialogueBoxScene[];
+
 type AudioPerDialogueBoxesResults = {
-  scene_id:string;
+  scene_id: string;
   heading: string;
   scenes: Scene[];
-}
-/** Matches localStorage: build-dialogue-box saves `JSON.stringify(dialogue_boxes_scenes)` → `DialogueBoxScene[]`. */
-
-type DialogueBoxesScenesLoaded = DialogueBoxScene[];
-type CharacterBuilderResults = {
-    profiles?: any[];
-    characterVoiceIds?: any[];
-    profilePrompts?: string[];
-  };
-  
-  type ParsedScreenplayResults = {
-    screenplay_id?: string;
-    characterFirstScene?: Record<string, number>;
-    sceneCount?: number;
-    scenes?: Array<{
-        id: string;
-        sceneNumber: number;
-        heading: string;
-        dialogue: Array<{ character: string; text: string; isNarration: boolean }>;
-      }>;
-  }
-type ResultsShape =
-  | CharacterBuilderResults
-  | ParsedScreenplayResults
-  | DialogueBoxesScenesLoaded
-  | AudioPerDialogueBoxesResults
-  | null;
-
-type Section = {
-  title: string;
-  items: unknown[];
 };
+
 
 type SectionConfig<TResult> = {
   title: string;
@@ -214,7 +196,7 @@ export default  function  BuildAudioPerDialogueBoxScene(){
       setLoadedResults({type: "dialogueBoxesScenes", results: parsed}); 
       setHasDialogueBoxesForAudio(true);
 
-      const AudioPerDialogueBoxesResults: AudioPerDialogueBoxesResults = {
+      const audioPerDialogueBoxesPayload: AudioPerDialogueBoxesResults = {
         scene_id: "123",
         heading: "123",
         scenes: parsed.map((scene) => ({
@@ -230,7 +212,7 @@ export default  function  BuildAudioPerDialogueBoxScene(){
           audio_url: scene.audio_url,
         })),
       }
-       setLoadedResults({type: "audioPerDialogueBoxes", results: AudioPerDialogueBoxesResults}); 
+       setLoadedResults({type: "audioPerDialogueBoxes", results: audioPerDialogueBoxesPayload}); 
        setHasText(true);
        setStatus("Loaded build audio for dialogue boxes complete.");
     }

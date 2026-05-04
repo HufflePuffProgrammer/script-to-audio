@@ -2,21 +2,81 @@
 
 import Link from "next/link";
 
-import { useScriptText,PARSED_SCREENPLAY_RESULTS_KEY } from "@/lib/useScriptText";
+import { useScriptText } from "@/lib/useScriptText";
 import { ChangeEvent, FormEvent, useState,useEffect, useMemo } from "react";
 import {
   buildNormalizedScriptText,
   mapPdfJsItems,
   normalizePdfLines,
 } from "@/lib/normalizePdfLines";
+import { DIALOGUE_BOXES_SCENES_KEY, CHARACTER_BUILDER_RESULTS_KEY, PARSED_SCREENPLAY_RESULTS_KEY, DIALOGUE_BOXES_AUDIO_KEY, COMPLETE_AUDIO_KEY} from "@/lib/constants";
+import { DialogueBoxScenesResults, CharacterBuilderResults, ParsedScreenplayResults, ResultsShape, LoadedResults, Section ,SectionConfig, buildSections} from "@/lib/types";
+
 const steps = ["Paste Script", "build LLM Char Input", "build Char Prompt ", "Generate complete audio"];
 const API_URL_PARSE_SCREENPLAY = "/api/admin/parse-screenplay";
 
-type ResultsShape = {
-  characterFirstScene? : any;
-  sceneCount? :number;
-  scenes? : [{ id: string, sceneNumber: number, heading: string, dialogue: Array<{character: string, text: string, isNarration: boolean}>}]
-} | null;
+const dialogueBoxesScenesSectionConfigs: SectionConfig<DialogueBoxScenesResults>[] = [
+  {
+    title: "Scene IDs",
+    selectItems: (scenes) => scenes.map((s) => s.scene_id),
+  },
+  {
+    title: "Scene Numbers",
+    selectItems: (scenes) => scenes.map((s) => s.sceneNumber),
+  },
+  {
+    title: "Headings",
+    selectItems: (scenes) => scenes.map((s) => s.heading),
+  },
+  {
+    title: "Characters",
+    selectItems: (scenes) => scenes.map((s) => s.characters),
+  },
+  {
+    title: "Dialogue Boxes",
+    selectItems: (scenes) => scenes.flatMap((s) => s.dialogue_boxes),
+  },
+];
+
+const characterBuilderSectionConfigs: SectionConfig<CharacterBuilderResults>[] = [
+  {
+    title: "Profiles",
+    selectItems: (results) => results.profiles ?? [],
+  },
+  {
+    title: "Best Ranked Voices1",
+    selectItems: (results) => results.characterVoiceIds ?? [],
+  },
+  {
+    title: "Profile Prompts",
+    selectItems: (results) => results.profilePrompts ?? [],
+  },
+];
+
+const parsedScreenplaySectionConfigs: SectionConfig<ParsedScreenplayResults>[] = [
+  {
+    title: "Screenplay ID",
+    selectItems: (results) => (results.screenplay_id ? [results.screenplay_id] : []),
+  },
+  {
+    title: "Character First Scene",
+    selectItems: (results) =>
+      results.characterFirstScene
+        ? Object.entries(results.characterFirstScene).map(([character, sceneNumber]) => ({
+            character,
+            sceneNumber,
+          }))
+        : [],
+  },
+  {
+    title: "Scene Count",
+    selectItems: (results) => (results.sceneCount !== undefined ? [results.sceneCount] : []),
+  },
+  {
+    title: "Scenes",
+    selectItems: (results) => results.scenes ?? [],
+  },
+];
 
 export default function ParseScreenplay() {
 
@@ -25,17 +85,47 @@ export default function ParseScreenplay() {
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   const [isExtracting, setIsExtracting] = useState(false);
   const [results, setResults] = useState<ResultsShape | null> (null);
+  const [loadedResults, setLoadedResults ] = useState<LoadedResults>(null);
+  
   const [screenplayId, setScreenplayId] = useState<string | null>(null);
   useEffect(() => {
     const stored = window.localStorage.getItem(PARSED_SCREENPLAY_RESULTS_KEY);
-    if (stored) {
-      setResults(JSON.parse(stored));
+    if (!stored) return;
+    const parsed = JSON.parse(stored);
+    if (parsed) {
+      setResults(parsed);
+      setLoadedResults({type: "parsedScreenplay", results: parsed});
     }
     console.log("results from session storage",results);
   }, []);
 
   const hasResults = Boolean(results);
-  console.log("results:",results, "has ressults", hasResults);
+  console.log("results:",results, "has results", hasResults);
+  const sections = useMemo(() => {
+    if (loadedResults?.type === "characterBuilder") {
+      return buildSections(
+        loadedResults.results,
+        characterBuilderSectionConfigs,
+      );
+    }
+    if (loadedResults?.type === "parsedScreenplay") {
+      console.log("loadedResults:",loadedResults);
+      console.log("parsedScreenplaySectionConfigs:",parsedScreenplaySectionConfigs);
+      return buildSections(
+        loadedResults.results,
+        parsedScreenplaySectionConfigs,
+      );
+    }
+    if (loadedResults?.type === "dialogueBoxScenes") {
+      return buildSections(
+        loadedResults.results,
+        dialogueBoxesScenesSectionConfigs,
+      );
+    }
+    return [];
+  }, [loadedResults]);
+
+  /*
   const sections = useMemo(() => {
     if (!results) return [];
     const characterFirstSceneItems = results.characterFirstScene
@@ -59,15 +149,27 @@ export default function ParseScreenplay() {
       },
     ];
   }, [results]);
+  */
 
-  const handleClear = () => {
-    clearParsedScreenplay();
+  const handleClear = () =>{
+    window.localStorage.removeItem(PARSED_SCREENPLAY_RESULTS_KEY);
+    window.localStorage.removeItem(CHARACTER_BUILDER_RESULTS_KEY);
+    window.localStorage.removeItem(DIALOGUE_BOXES_SCENES_KEY);
+    window.localStorage.removeItem(DIALOGUE_BOXES_AUDIO_KEY);
+    window.localStorage.removeItem(COMPLETE_AUDIO_KEY);
     setResults(null);
-  };
+    setStatus("");
+    setText("");
+  }
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setStatus("Submitting...");
     console.log("Text:", text);
+    if (!text || text.trim().length === 0){
+      setStatus("No text found. Please upload a PDF.");
+      return;
+    }
       try {
       const response = await fetch(API_URL_PARSE_SCREENPLAY, {
         method: "POST",
@@ -89,6 +191,7 @@ export default function ParseScreenplay() {
       window.localStorage.setItem(PARSED_SCREENPLAY_RESULTS_KEY, JSON.stringify(data));
       setResults(data);
       setScreenplayId(data.screenplay_id);
+      setLoadedResults({type: "parsedScreenplay", results: data});
       setStatus("Parsed screenplay into dialogue boxes.");
       } catch (error) {
         console.error(error);
@@ -218,7 +321,7 @@ export default function ParseScreenplay() {
                 tabIndex={hasText ? 0 : -1}
                 type="submit"
               >
-                Parse Screenplay
+                1. Parse Screenplay
               </button>
               
             </div>
