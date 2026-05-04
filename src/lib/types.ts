@@ -85,5 +85,64 @@ export type DialogueBoxScene = {
   dialogue_boxes: DialogueBox[],
 }
 
+/** Array returned from build-dialogue-box API (`dialogue_boxes_scenes`). */
+export type DialogueBoxScenesResults = DialogueBoxScene[];
+export type CharacterBuilderResults = {
+  profiles?: CharacterProfile[] | null;
+  characterVoiceIds?: CharacterVoiceIds[] | null;
+  profilePrompts?: string[];
+};
+export type ParsedScreenplayResults = {
+  screenplay_id?: string;
+  characterFirstScene?: Record<string, number>;
+  sceneCount?: number;
+  scenes?: Array<{
+    id: string;
+    sceneNumber: number;
+    heading: string;
+    dialogue: Array<{
+      character: string;
+      text: string;
+      isNarration: boolean;
+    }>;
+  }>;
+}
+export type ResultsShape = 
+| DialogueBoxScenesResults 
+| CharacterBuilderResults 
+| ParsedScreenplayResults 
+| null;
+
+export type LoadedResults = 
+| {type: "characterBuilder", results: CharacterBuilderResults}
+| {type: "parsedScreenplay", results: ParsedScreenplayResults}
+| {type: "dialogueBoxScenes", results: DialogueBoxScenesResults}
+|null;
+
+export type Section = {
+  title: string;
+  items: unknown[];
+}
+export type SectionConfig<TResult> = {
+  title: string;
+  selectItems: (results: TResult) => unknown[];
+}
+export const buildSections = <TResult,>(
+  results: TResult | null,
+  configs: SectionConfig<TResult>[],
+): Section[] =>{
+    if (!results) return [];
+    return configs.map((config)=> ({
+      title:config.title,
+      items: config.selectItems(results),
+    }))
+};
+
+
+// exporttype AudioPerDialogueBoxesResults = {
+//   scene_id:string;
+//   heading: string;
+//   scenes: Scene[];
+// }
 //export const ageDescriptorPattern = /\((?:\s*\d{1,3}s|\s*\d{1,3} ?years|[^)]*(?:years old|yrs old|year old))\b/i;
 //export type stageDirectionPattern = /^(CLOSE ON|ANGLE ON|CUT TO|PAN TO|DISSOLVE TO|FADE (IN|OUT)|CAMERA|A VOICE)/i;

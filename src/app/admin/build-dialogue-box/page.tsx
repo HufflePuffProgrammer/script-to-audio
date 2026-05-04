@@ -2,70 +2,39 @@
 
 import Link from "next/link";
 
-import { CHARACTER_BUILDER_RESULTS_KEY, PARSED_SCREENPLAY_RESULTS_KEY, DIALOGUE_BOXES_SCENES_KEY } from "@/lib/constants";
 import { useScriptText } from "@/lib/useScriptText";
 import { ChangeEvent, FormEvent, useState,  useMemo } from "react";
 import {DialogueBoxScene, DialogueBox} from "@/lib/types";
+import { CHARACTER_BUILDER_RESULTS_KEY, PARSED_SCREENPLAY_RESULTS_KEY, DIALOGUE_BOXES_SCENES_KEY, DIALOGUE_BOXES_AUDIO_KEY, COMPLETE_AUDIO_KEY } from "@/lib/constants";
+import { DialogueBoxScenesResults, CharacterBuilderResults, ParsedScreenplayResults, ResultsShape, LoadedResults, Section ,SectionConfig, buildSections} from "@/lib/types";
+
 const API_URL = "/api/admin/build-dialogue-box";
 
 
-type DialogueBoxesScenesLoaded = DialogueBoxScene[];
-type CharacterBuilderResults = {
-  profiles?: any[];
-  characterVoiceIds?: any[];
-  profilePrompts?: string[];
-};
-
-type ParsedScreenplayResults = {
-  characterFirstScene?: Record<string, number>;
-  sceneCount?: number;
-  scenes?: Array<{
-    id: string;
-    sceneNumber: number;
-    heading: string;
-    dialogue: Array<{ character: string; text: string; isNarration: boolean }>;
-  }>;
-};
-
-type ResultsShape = CharacterBuilderResults | ParsedScreenplayResults | DialogueBoxesScenesLoaded| null;
-
-type LoadedResults = 
-| {type: "characterBuilder", results: CharacterBuilderResults} 
-| {type: "parsedScreenplay",results: ParsedScreenplayResults}
-| {type: "dialogueBoxesScenes", results: DialogueBoxesScenesLoaded}
-| null;
-
-type Section = {
-  title: string;
-  items: unknown[];
-};
-
-type SectionConfig<TResult> = {
-  title: string;
-  selectItems: (results: TResult) => unknown[];
-};
-
-const buildSections = <TResult,>(
-  results: TResult | null,
-  configs: SectionConfig<TResult>[],
-): Section[] => {
-  if (!results) return [];
-  return configs.map((config) => ({
-    title: config.title,
-    items: config.selectItems(results),
-  }));
-};
-
-const dialogueBoxesScenesSectionConfigs: SectionConfig<DialogueBoxesScenesLoaded>[] = [
+  
+const dialogueBoxScenesSectionConfigs: SectionConfig<DialogueBoxScenesResults>[] = [
   {
     title: "Scene IDs",
-    selectItems: (results) => results.map((s) => s.scene_id),
+    selectItems: (scenes) => scenes.map((s) => s.scene_id),
+  },
+  {
+    title: "Scene Numbers",
+    selectItems: (scenes) => scenes.map((s) => s.sceneNumber),
+  },
+  {
+    title: "Headings",
+    selectItems: (scenes) => scenes.map((s) => s.heading),
+  },
+  {
+    title: "Characters",
+    selectItems: (scenes) => scenes.map((s) => s.characters),
   },
   {
     title: "Dialogue Boxes",
-    selectItems: (results) => results.flatMap((s) => s.dialogue_boxes),
+    selectItems: (scenes) => scenes.flatMap((s) => s.dialogue_boxes),
   },
 ];
+
 const characterBuilderSectionConfigs: SectionConfig<CharacterBuilderResults>[] = [
   {
     title: "Profiles",
@@ -112,7 +81,7 @@ export default function BuildDialogueBox() {
   const [PSResults, setPSResults] = useState<ParsedScreenplayResults | null>(null);
   const [results, setResults] = useState<ResultsShape | null>(null);
   const [loadedResults, setLoadedResults ] = useState<LoadedResults>(null);
-  
+  const [screenplayId, setScreenplayId] = useState<string | null>(null);
   const sections = useMemo(() => {
     if (loadedResults?.type === "characterBuilder") {
       return buildSections(
@@ -126,10 +95,11 @@ export default function BuildDialogueBox() {
         parsedScreenplaySectionConfigs,
       );
     }
-    if (loadedResults?.type === "dialogueBoxesScenes") {
+    if (loadedResults?.type === "dialogueBoxScenes") {
+ 
       return buildSections(
         loadedResults.results,
-        dialogueBoxesScenesSectionConfigs,
+        dialogueBoxScenesSectionConfigs,
       );
     }
     return [];
@@ -148,15 +118,24 @@ const handleLoadParsedScreenplay = () =>{
   const stored = window.localStorage.getItem(PARSED_SCREENPLAY_RESULTS_KEY);
   if (!stored) return;
   const parsed = JSON.parse(stored);
- console.log("parsed screenplay:", parsed);
-  setLoadedResults( {type: "parsedScreenplay", results: parsed})
+  setLoadedResults({type: "parsedScreenplay", results: parsed});
+  setScreenplayId(parsed.screenplay_id);
   setPSResults(parsed);
   setStatus("Loaded parsed screenplay complete.");
 }
 const handleClear = () => {
+  window.localStorage.removeItem(PARSED_SCREENPLAY_RESULTS_KEY);
+  window.localStorage.removeItem(CHARACTER_BUILDER_RESULTS_KEY);
+  window.localStorage.removeItem(DIALOGUE_BOXES_SCENES_KEY);
+  window.localStorage.removeItem(DIALOGUE_BOXES_AUDIO_KEY);
+  window.localStorage.removeItem(COMPLETE_AUDIO_KEY);
   setLoadedResults(null);
   setCPResults(null);
   setPSResults(null);
+  setScreenplayId(null);
+  setResults(null);
+  setStatus("");
+  setText("");
   console.log("Cleared results");
 }
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -182,11 +161,12 @@ const handleClear = () => {
       }
       const data = await response.json();
       setResults(data)
+
       const {dialogue_boxes_scenes }= data;
+
       window.localStorage.setItem(DIALOGUE_BOXES_SCENES_KEY,JSON.stringify(dialogue_boxes_scenes));
       setStatus("Built dialogue boxes complete.");
-      setLoadedResults({type: "dialogueBoxesScenes", results: dialogue_boxes_scenes});
-console.log("dialogue_boxes_scenes", dialogue_boxes_scenes);
+      setLoadedResults({type: "dialogueBoxScenes", results: dialogue_boxes_scenes});
       setResults(dialogue_boxes_scenes);
   };  
 
@@ -221,19 +201,20 @@ console.log("dialogue_boxes_scenes", dialogue_boxes_scenes);
                 aria-disabled={!hasText}
                 tabIndex={hasText ? 0 : -1}
                 type="button"
-                onClick={handleLoadCharacterProfiles}
+                onClick={handleLoadParsedScreenplay}
               >
-                1.Load Character Profiles
-              </button>
-              <button
+                1. Load Parsed Screenplay
+            </button>
+            <button
                 className="rounded-full bg-[#f9cf00] px-4 py-2 text-sm font-semibold text-[#1b1b1b] shadow-md transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
                 aria-disabled={!hasText}
                 tabIndex={hasText ? 0 : -1}
                 type="button"
-                onClick={handleLoadParsedScreenplay}
+                onClick={handleLoadCharacterProfiles}
               >
-                2. Load Parsed Screenplay
+                2.Load Character Profiles
               </button>
+
               <button
                 className="rounded-full bg-[#f9cf00] px-4 py-2 text-sm font-semibold text-[#1b1b1b] shadow-md transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
                 aria-disabled={!hasText}
@@ -255,7 +236,7 @@ console.log("dialogue_boxes_scenes", dialogue_boxes_scenes);
          {(loadedResults == null) && (
           <div className="rounded-3xl bg-white p-6 shadow-md ring-1 ring-slate-200">
             <p className="text-sm text-slate-500">
-              No data available. 1. Build a character 2. Parse Screenplay. 3. Build Dialogue Boxes
+              No data available. 1. Parse Screenplay 2. Build a character  3. Build Dialogue Boxes
             </p>
    
           </div>
