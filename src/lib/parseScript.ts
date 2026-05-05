@@ -199,6 +199,7 @@ export function parseScript(text: string) {
       console.log("character:", line.character, "text:",line.text, "isNarration:", line.isNarration);
     });
   });
+  console.log("characterFirstScene:", characterFirstScene);
 
   return {
     scenes,

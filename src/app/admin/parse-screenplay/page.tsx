@@ -291,13 +291,8 @@ export default function ParseScreenplay() {
                 className="mt-2 block w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 shadow-inner transition focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100"
               />
             </label>
-            <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-600">
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-2 rounded-full bg-[#f9cf00]/80 px-3 py-1 text-xs font-semibold text-[#1b1b1b] shadow-sm">
-                  Saved locally
-                </span>
-                <span>{characters} characters</span>
-              </div>
+            <div className="flex flex-wrap items-center justify-between gap-2 mt-3 text-sm text-slate-600" >
+              
               <button
                 type="button"
                 onClick={handleClear}
