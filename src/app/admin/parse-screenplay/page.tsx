@@ -192,7 +192,7 @@ export default function ParseScreenplay() {
       setResults(data);
       setScreenplayId(data.screenplay_id);
       setLoadedResults({type: "parsedScreenplay", results: data});
-      setStatus("Parsed screenplay into dialogue boxes.");
+      setStatus("Parsed screenplay completed.");
       } catch (error) {
         console.error(error);
         setStatus("Error submitting form");
