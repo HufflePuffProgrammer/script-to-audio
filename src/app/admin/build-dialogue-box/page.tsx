@@ -3,9 +3,10 @@
 import Link from "next/link";
 
 import { useScriptText } from "@/lib/useScriptText";
-import { ChangeEvent, FormEvent, useState,  useMemo } from "react";
+import { FormEvent, useState,  useMemo } from "react";
 import {DialogueBoxScene, DialogueBox} from "@/lib/types";
-import { CHARACTER_BUILDER_RESULTS_KEY, PARSED_SCREENPLAY_RESULTS_KEY, DIALOGUE_BOXES_SCENES_KEY, DIALOGUE_BOXES_AUDIO_KEY, COMPLETE_AUDIO_KEY } from "@/lib/constants";
+import { CHARACTER_BUILDER_RESULTS_KEY, PARSED_SCREENPLAY_RESULTS_KEY, DIALOGUE_BOXES_SCENES_KEY } from "@/lib/constants";
+import { useAdminWorkflowClear } from "@/lib/useAdminWorkflowClear";
 import { DialogueBoxScenesResults, CharacterBuilderResults, ParsedScreenplayResults, ResultsShape, LoadedResults, Section ,SectionConfig, buildSections} from "@/lib/types";
 
 const API_URL = "/api/admin/build-dialogue-box";
@@ -123,21 +124,19 @@ const handleLoadParsedScreenplay = () =>{
   setPSResults(parsed);
   setStatus("Loaded parsed screenplay complete.");
 }
-const handleClear = () => {
-  window.localStorage.removeItem(PARSED_SCREENPLAY_RESULTS_KEY);
-  window.localStorage.removeItem(CHARACTER_BUILDER_RESULTS_KEY);
-  window.localStorage.removeItem(DIALOGUE_BOXES_SCENES_KEY);
-  window.localStorage.removeItem(DIALOGUE_BOXES_AUDIO_KEY);
-  window.localStorage.removeItem(COMPLETE_AUDIO_KEY);
-  setLoadedResults(null);
-  setCPResults(null);
-  setPSResults(null);
-  setScreenplayId(null);
-  setResults(null);
-  setStatus("");
-  setText("");
-  console.log("Cleared results");
-}
+const handleClear = useAdminWorkflowClear({
+  setText,
+  setStatus,
+  setUploadStatus,
+  afterClear: () => {
+    setLoadedResults(null);
+    setCPResults(null);
+    setPSResults(null);
+    setScreenplayId(null);
+    setResults(null);
+    console.log("Cleared results");
+  },
+});
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setStatus("Submitting...");

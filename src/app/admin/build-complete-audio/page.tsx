@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import {  FormEvent, useEffect,useState,  useMemo  } from "react";
 import { DIALOGUE_BOXES_SCENES_KEY, CHARACTER_BUILDER_RESULTS_KEY, PARSED_SCREENPLAY_RESULTS_KEY, DIALOGUE_BOXES_AUDIO_KEY, COMPLETE_AUDIO_KEY} from "@/lib/constants";
+import { useAdminWorkflowClear } from "@/lib/useAdminWorkflowClear";
 
 import {DialogueBoxScene, DialogueBox, Scene} from "@/lib/types";
 const API_URL = "/api/admin/build-complete-audio";
@@ -163,6 +164,22 @@ export default  function  BuildAudioPerDialogueBoxScene(){
     const [hasCompleteAudio, setHasCompleteAudio] = useState(false);
     const [parsedScreenplayId,setParsedScreenplayId] = useState<string | null>(null);
     
+    const handleClear = useAdminWorkflowClear({
+      setStatus,
+      setUploadStatus,
+      afterClear: () => {
+        setDialogueBoxesScenes([]);
+        setHasText(false);
+        setLoadedResults(null);
+        setResults(null);
+        setAudioUrls({});
+        setAudioStatus({});
+        setHasDialogueBoxesForAudio(false);
+        setCompleteAudio("");
+        setHasCompleteAudio(false);
+        setParsedScreenplayId(null);
+      },
+    });
     const sections = useMemo(() => {
         if (loadedResults?.type=="characterBuilder"){
             return buildSections(
@@ -209,9 +226,6 @@ export default  function  BuildAudioPerDialogueBoxScene(){
         setHasText(true);
         setStatus("Loaded complete audio complete.");
     }, []);
-    const handleClear = () =>{
-        return null;
-    }
     const handleLoadDialogueBoxesForAudio = () =>{
 
       setHasDialogueBoxesForAudio(true);
