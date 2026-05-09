@@ -3,14 +3,10 @@
 import Link from "next/link";
 
 import { useScriptText } from "@/lib/useScriptText";
-import { ChangeEvent, FormEvent, useState,useEffect, useMemo } from "react";
-import {
-  buildNormalizedScriptText,
-  mapPdfJsItems,
-  normalizePdfLines,
-} from "@/lib/normalizePdfLines";
-import { DIALOGUE_BOXES_SCENES_KEY, CHARACTER_BUILDER_RESULTS_KEY, PARSED_SCREENPLAY_RESULTS_KEY, DIALOGUE_BOXES_AUDIO_KEY, COMPLETE_AUDIO_KEY} from "@/lib/constants";
+import { FormEvent, useState,useEffect, useMemo } from "react";
+import { PARSED_SCREENPLAY_RESULTS_KEY } from "@/lib/constants";
 import { DialogueBoxScenesResults, CharacterBuilderResults, ParsedScreenplayResults, ResultsShape, LoadedResults, Section ,SectionConfig, buildSections} from "@/lib/types";
+import { useParseScreenplayActions } from "@/lib/useParseScreenplayActions";
 
 const steps = ["Paste Script", "build LLM Char Input", "build Char Prompt ", "Generate complete audio"];
 const API_URL_PARSE_SCREENPLAY = "/api/admin/parse-screenplay";
@@ -82,10 +78,14 @@ export default function ParseScreenplay() {
 
   const { text, setText, clearParsedScreenplay, hasText, characters } = useScriptText();
   const [status, setStatus] = useState("");
-  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
-  const [isExtracting, setIsExtracting] = useState(false);
   const [results, setResults] = useState<ResultsShape | null> (null);
   const [loadedResults, setLoadedResults ] = useState<LoadedResults>(null);
+  const { isExtracting, uploadStatus, handleClear, handlePdfUpload } =
+    useParseScreenplayActions({
+      setText,
+      setResults,
+      setStatus,
+    });
   
   const [screenplayId, setScreenplayId] = useState<string | null>(null);
   useEffect(() => {
@@ -125,43 +125,6 @@ export default function ParseScreenplay() {
     return [];
   }, [loadedResults]);
 
-  /*
-  const sections = useMemo(() => {
-    if (!results) return [];
-    const characterFirstSceneItems = results.characterFirstScene
-      ? Object.entries(results.characterFirstScene).map(([character, sceneNumber]) => ({
-          character,
-          sceneNumber,
-        }))
-      : [];
-    return [
-      {
-        title: "Character First Scene",
-        items: characterFirstSceneItems,
-      },
-      {
-        title: "Scene Count",
-        items: results.sceneCount !== undefined ? [results.sceneCount] : [],
-      },
-      {
-        title: "Scenes",
-        items: results.scenes ?? []
-      },
-    ];
-  }, [results]);
-  */
-
-  const handleClear = () =>{
-    window.localStorage.removeItem(PARSED_SCREENPLAY_RESULTS_KEY);
-    window.localStorage.removeItem(CHARACTER_BUILDER_RESULTS_KEY);
-    window.localStorage.removeItem(DIALOGUE_BOXES_SCENES_KEY);
-    window.localStorage.removeItem(DIALOGUE_BOXES_AUDIO_KEY);
-    window.localStorage.removeItem(COMPLETE_AUDIO_KEY);
-    setResults(null);
-    setStatus("");
-    setText("");
-  }
-
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setStatus("Submitting...");
@@ -197,74 +160,6 @@ export default function ParseScreenplay() {
         console.error(error);
         setStatus("Error submitting form");
       }
-  };
-
-  const handlePdfUpload = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    console.log("file:",file?.name);
-    if (!file) return;
-    if (file.type !== "application/pdf") {
-      setUploadStatus("Only PDF uploads are supported right now.");
-      return;
-    }
-
-    setIsExtracting(true);
-    setUploadStatus("Extracting text from PDF...");
-    try {
-      const arrayBuffer = await file.arrayBuffer();
-      const pdfjs = await import("pdfjs-dist/legacy/build/pdf");
-      pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
-      const document = await pdfjs.getDocument({ data: arrayBuffer }).promise;
-      let extractedText = "";
-      let normalizedExtractedText = "";
-     //console.log("document.numPages:",document.numPages);
-
-      for (let pageIndex = 1; pageIndex <= document.numPages; pageIndex += 1) {
-        const page = await document.getPage(pageIndex);
-        const content = await page.getTextContent({ normalizeWhitespace: false, disableCombineTextItems: true });
-        const positionedItems = mapPdfJsItems(
-          content.items as Array<{ str?: string; transform?: number[] }>,
-        );
-        const normalizedLines = normalizePdfLines(positionedItems);
-        const normalizedPageText = buildNormalizedScriptText(normalizedLines);
-        const pageText = (() => {
-          const buffer: string[] = [];
-          let prevY: number | null = null;
-          let atLineStart = true;
-          const indentThreshold = 10;
-          (content.items as Array<{ str?: string; transform?: number[] }>).forEach((item) => {
-            if (!item.str) return;
-            const y = item.transform?.[5];
-            const x = item.transform?.[4];
-            if (prevY !== null && y !== undefined && Math.abs(y - prevY) > 5) {
-              buffer.push("\n");
-              atLineStart = true;
-            }
-            if (atLineStart && x !== undefined && x > indentThreshold) {
-              buffer.push("\t");
-            }
-            buffer.push(item.str);
-            prevY = y ?? prevY;
-            atLineStart = false;
-          });
-          return buffer.join("");
-        })();
-        //console.log("normalizedLines:", pageIndex, normalizedLines);
-        //console.log("normalizedPageText:", pageIndex, JSON.stringify(normalizedPageText));
-       // console.log("pageText:", JSON.stringify(pageText));
-        extractedText += `${pageText}\n`;
-        normalizedExtractedText += `${normalizedPageText}\n`;
-      }
-      ////console.log("extractedText:",extractedText);
-      console.log("normalizedExtractedText:", normalizedExtractedText);
-      setText(normalizedExtractedText);
-      setUploadStatus("PDF text extracted successfully.");
-    } catch (error) {
-      console.error("Failed to parse PDF", error);
-      setUploadStatus("Could not extract text from this PDF.");
-    } finally {
-      setIsExtracting(false);
-    }
   };
 
   return (

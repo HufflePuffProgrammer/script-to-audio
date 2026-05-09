@@ -3,9 +3,10 @@
 import Link from "next/link";
 
 import { useScriptText } from "@/lib/useScriptText";
-import { ChangeEvent, FormEvent, useState, useEffect, useMemo } from "react";
+import { FormEvent, useState, useEffect, useMemo } from "react";
 import { CharacterVoiceIds, CharacterProfile } from "@/lib/types";
-import { DIALOGUE_BOXES_SCENES_KEY, CHARACTER_BUILDER_RESULTS_KEY, PARSED_SCREENPLAY_RESULTS_KEY, DIALOGUE_BOXES_AUDIO_KEY, COMPLETE_AUDIO_KEY} from "@/lib/constants";
+import { CHARACTER_BUILDER_RESULTS_KEY, PARSED_SCREENPLAY_RESULTS_KEY } from "@/lib/constants";
+import { useAdminWorkflowClear } from "@/lib/useAdminWorkflowClear";
 import { DialogueBoxScenesResults, CharacterBuilderResults, ParsedScreenplayResults, ResultsShape, LoadedResults, Section, SectionConfig, buildSections } from "@/lib/types";
 const API_URL_CHARACTER_BUILDER = "/api/admin/character-builder";
 
@@ -79,7 +80,6 @@ const API_URL_CHARACTER_BUILDER = "/api/admin/character-builder";
   const { text, setText, clearCharacterBuilder, hasText, characters } = useScriptText();
   const [status, setStatus] = useState("");
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
-  const [isExtracting, setIsExtracting] = useState(false);
   const [results, setResults] = useState<ResultsShape | null>(null);
   const [loadedResults, setLoadedResults ] = useState<LoadedResults>(null);
   const [screenplayId, setScreenplayId] = useState<string | null>(null);
@@ -91,8 +91,9 @@ const API_URL_CHARACTER_BUILDER = "/api/admin/character-builder";
     }
   }, []);
 
-  const hasResults = Boolean(results);
-  console.log("results:",results, "has results", hasResults);
+  // Show the results panel for character-builder API data *or* loaded parsed screenplay / dialogue data.
+  const hasResults = Boolean(results) || loadedResults != null;
+  console.log("results:", results, "loadedResults:", loadedResults, "hasResults:", hasResults);
 
   const sections = useMemo(() => {
     if (loadedResults?.type === "characterBuilder") {
@@ -119,26 +120,26 @@ const API_URL_CHARACTER_BUILDER = "/api/admin/character-builder";
 
   const handleLoadParsedScreenplay = () => {
     const stored = window.localStorage.getItem(PARSED_SCREENPLAY_RESULTS_KEY);
+    console.log("handleLoadParsedScreenplay: stored:",stored);
     if (!stored) return;
     const parsed = JSON.parse(stored);
+    const hasResults = Boolean(parsed);
     setLoadedResults({type: "parsedScreenplay", results: parsed});
     setScreenplayId( parsed.screenplay_id);
     setStatus("Loaded parsed screenplay complete.");
 
   }
 
-  const handleClear = () =>{
-    window.localStorage.removeItem(PARSED_SCREENPLAY_RESULTS_KEY);
-    window.localStorage.removeItem(CHARACTER_BUILDER_RESULTS_KEY);
-    window.localStorage.removeItem(DIALOGUE_BOXES_SCENES_KEY);
-    window.localStorage.removeItem(DIALOGUE_BOXES_AUDIO_KEY);
-    window.localStorage.removeItem(COMPLETE_AUDIO_KEY);
-    setResults(null);
-    setLoadedResults(null);
-    setStatus("");
-    setText("");
-    setScreenplayId(null);
-  }
+  const handleClear = useAdminWorkflowClear({
+    setText,
+    setStatus,
+    setUploadStatus,
+    afterClear: () => {
+      setResults(null);
+      setLoadedResults(null);
+      setScreenplayId(null);
+    },
+  });
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -179,63 +180,6 @@ const API_URL_CHARACTER_BUILDER = "/api/admin/character-builder";
       setStatus("Built character profiles complete.");
   };
 
-  const handlePdfUpload = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    console.log("file:",file?.name);
-    if (!file) return;
-    if (file.type !== "application/pdf") {
-      setUploadStatus("Only PDF uploads are supported right now.");
-      return;
-    }
-
-    setIsExtracting(true);
-    setUploadStatus("Extracting text from PDF...");
-    try {
-      const arrayBuffer = await file.arrayBuffer();
-      const pdfjs = await import("pdfjs-dist/legacy/build/pdf");
-      pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
-      const document = await pdfjs.getDocument({ data: arrayBuffer }).promise;
-      let extractedText = "";
-
-
-      for (let pageIndex = 1; pageIndex <= document.numPages; pageIndex += 1) {
-        const page = await document.getPage(pageIndex);
-        const content = await page.getTextContent({ normalizeWhitespace: false, disableCombineTextItems: true });
-        const pageText = (() => {
-          const buffer: string[] = [];
-          let prevY: number | null = null;
-          let atLineStart = true;
-          const indentThreshold = 10;
-          (content.items as Array<{ str?: string; transform?: number[] }>).forEach((item) => {
-            if (!item.str) return;
-            const y = item.transform?.[5];
-            const x = item.transform?.[4];
-            if (prevY !== null && y !== undefined && Math.abs(y - prevY) > 5) {
-              buffer.push("\n");
-              atLineStart = true;
-            }
-            if (atLineStart && x !== undefined && x > indentThreshold) {
-              buffer.push("\t");
-            }
-            buffer.push(item.str);
-            prevY = y ?? prevY;
-            atLineStart = false;
-          });
-          return buffer.join("");
-        })();
-        console.log("pageText:", JSON.stringify(pageText));
-        extractedText += `${pageText}\n`;
-      }
-      console.log("extractedText:",extractedText);
-      setText(extractedText);
-      setUploadStatus("PDF text extracted successfully.");
-    } catch (error) {
-      console.error("Failed to parse PDF", error);
-      setUploadStatus("Could not extract text from this PDF.");
-    } finally {
-      setIsExtracting(false);
-    }
-  };
 
   return (
     <main className="min-h-screen bg-[#f4f6fb]">
@@ -248,19 +192,15 @@ const API_URL_CHARACTER_BUILDER = "/api/admin/character-builder";
         </header>
 
         <form className="space-y-4" onSubmit={handleSubmit}>
-          <section className="space-y-3 rounded-3xl bg-white p-6 shadow-md ring-1 ring-slate-200">
-            
-            <label className="text-sm font-semibold text-slate-600">
-              Upload a PDF:
-              <input
-                type="file"
-                accept="application/pdf"
-                disabled={isExtracting}
-                onChange={handlePdfUpload}
-                className="mt-2 block w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 shadow-inner transition focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100"
-              />
-            </label>
-            <div className="flex flex-wrap items-center justify-between gap-2 mt-3 text-sm text-slate-600"> 
+
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Link
+                href="/admin"
+                className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                Back to Admin
+              </Link>
               <button
                 type="button"
                 onClick={handleClear}
@@ -269,14 +209,6 @@ const API_URL_CHARACTER_BUILDER = "/api/admin/character-builder";
                 Clear
               </button>
             </div>
-          </section>
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <Link
-              href="/admin"
-              className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-            >
-              Back to Admin
-            </Link>
             <div className="flex flex-wrap items-center gap-2">
             <button
               className="rounded-full bg-[#f9cf00] px-4 py-2 text-sm font-semibold text-[#1b1b1b] shadow-md transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
