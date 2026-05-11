@@ -15,7 +15,7 @@ export async function buildCharacterProfile(characterInputs: CharacterInput[], a
     const profiles = [];
     const characterVoiceIds: CharacterVoiceIds[] =[];
     const profilePrompts = [];
-console.log("characterInputs: ", characterInputs);
+  console.log("characterInputs: ", characterInputs);
 
     for (const characterInput of characterInputs) {
         if (await voiceIdExists(screenplayId, characterInput.character)) {
@@ -47,7 +47,6 @@ console.log("characterInputs: ", characterInputs);
         });
 
         //6- Assign Voice to Character. Upsert to database
-
         await upsertVoiceIdToCharacter(
           screenplayId,
           characterInput.character,

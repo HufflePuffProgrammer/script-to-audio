@@ -37,9 +37,15 @@ export function useScriptText() {
     }
   };
 
+  /** Clears the saved script text from state and localStorage. */
+  const clear = () => {
+    update("");
+  };
+
   return {
     text,
     setText: update,
+    clear,
     clearCharacterBuilder,
     clearParsedScreenplay,
     hasText: text.trim().length > 0,
