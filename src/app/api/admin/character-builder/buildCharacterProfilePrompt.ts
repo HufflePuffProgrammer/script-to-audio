@@ -9,7 +9,7 @@
 // };
 import { CharacterInput } from "@/lib/types";
 
-export function buildCharacterProfilingPrompt(characterInput: CharacterInput)
+export function buildCharacterProfilePrompt(characterInput: CharacterInput)
 {
     console.log("2-Building character profiling prompt");
     return `
