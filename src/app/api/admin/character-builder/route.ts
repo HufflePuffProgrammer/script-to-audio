@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { parseScriptToCharInput } from "@/lib/parseScriptToCharInput";
 import { getAvailableVoices } from "@/lib/audio/getAvailableVoices";
-import { buildCharacterProfile } from "@/lib/buildCharacterProfile";
+import { buildCharacterProfile } from "@/app/api/admin/character-builder/buildCharacterProfile";
 import { getScreenplayData } from "@/lib/db/data";
 
   export async function POST(request: Request) {

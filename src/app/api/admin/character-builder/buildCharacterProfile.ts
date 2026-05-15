@@ -1,10 +1,10 @@
 import {CharacterInput, CharacterVoiceIds} from "@/lib/types";
-import {voiceIdExists} from "@/app/api/admin/character-builder/step-5-1-AssignElevenLabsAgent";
-import {buildCharacterProfilingPrompt} from "@/app/api/admin/character-builder/step-2-buildCharacterProfilingPrompt";
-import {generateCharacterProfile} from "@/app/api/admin/character-builder/step-3-generateCharacterProfile";
-import {buildVoiceRankingPrompt} from "@/app/api/admin/character-builder/step-5-2-VoiceRankingPrompt";
-import {rankVoicesWithClaude} from "@/app/api/admin/character-builder/step-5-3-RankVoicesWithClaude";
-import {upsertVoiceIdToCharacter} from "@/app/api/admin/character-builder/step-5-4-UpsertVoiceIdToCharacter";
+import {voiceIdExists} from "@/app/api/admin/character-builder/VoiceIdExists";
+import {buildCharacterProfilePrompt} from "@/app/api/admin/character-builder/buildCharacterProfilePrompt";
+import {generateCharacterProfile} from "@/app/api/admin/character-builder/generateCharacterProfile";
+import {buildVoiceRankingPrompt} from "@/app/api/admin/character-builder/buildVoiceRankingPrompt";
+import {generateBestRankedVoiceWithClaude} from "@/app/api/admin/character-builder/generateBestRankedVoiceWithClaude";
+import {upsertVoiceIdToCharacter} from "@/app/api/admin/character-builder/upsertVoiceIdToCharacter";
 import { AvailableVoices } from "@/lib/types";
 
 export async function buildCharacterProfile(characterInputs: CharacterInput[], availableVoices: AvailableVoices, screenplayId: string ){
@@ -15,24 +15,24 @@ export async function buildCharacterProfile(characterInputs: CharacterInput[], a
     const profiles = [];
     const characterVoiceIds: CharacterVoiceIds[] =[];
     const profilePrompts = [];
-  console.log("characterInputs: ", characterInputs);
-
+  
     for (const characterInput of characterInputs) {
         if (await voiceIdExists(screenplayId, characterInput.character)) {
+          /* DEBUGGING
           console.log("voiceIdExists, skipping: ", characterInput.character);
+          */
           continue;
         }
         
-        const profilePrompt = buildCharacterProfilingPrompt(characterInput);
+        const profilePrompt = buildCharacterProfilePrompt(characterInput);
         profilePrompts.push(profilePrompt);
+        
         const profile = await generateCharacterProfile(profilePrompt);
         profiles.push(profile);
 
-        // step-5-2 VoiceRankingPrompt
         const voiceRankingPrompt = await buildVoiceRankingPrompt(profile, availableVoices);
 
-        //5-3 Rank Voices with Claude
-        const bestRankedVoice = await rankVoicesWithClaude(
+        const bestRankedVoice = await generateBestRankedVoiceWithClaude(
           profile,
           availableVoices,
           voiceRankingPrompt,

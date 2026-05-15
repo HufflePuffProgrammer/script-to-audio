@@ -103,7 +103,9 @@ export function parseScriptToCharInput(text: string) {
     }
 
     const isIndented = indentedLinePattern.test(rawLine);
+    /* DEBUGGING
     console.log("isIndented:", isIndented,"rawLine:",rawLine);
+    */
     if (activeCharacter && isIndented) {
       sceneContextLines.push(rawLine.trim());
       activeCharacter = null;
