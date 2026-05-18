@@ -5,8 +5,9 @@ import Link from "next/link";
 import { useScriptText } from "@/lib/useScriptText";
 import { useParsedScenes, ParsedScenesCache } from "@/lib/useParsedScenes";
 import { Scene } from "@/lib/types";
+import { PARSED_SCREENPLAY_RESULTS_KEY } from "@/lib/constants";
 
-const steps = ["Paste Text", "Scenes", "Audio Staging", "Generate complete audio"];
+const steps = ["Paste Text", "Scenes","Character Builder", "Audio Staging", "Generate complete audio"];
 
 const Progress = ({ activeIndex }: { activeIndex: number }) => {
   const progress = (activeIndex / (steps.length - 1)) * 100;
@@ -41,6 +42,7 @@ export default function ScenesStep() {
   const [status, setStatus] = useState<"idle" | "loading" | "error" | "ready">("idle");
   const [message, setMessage] = useState("Paste text in Step 1, then parse.");
   const [scenes, setScenes] = useState<Scene[]>([]);
+  const API_URL = "/api/parse";
 
   const firstThreeScenes = useMemo(() => scenes.slice(0, 3), [scenes]);
 
@@ -52,13 +54,18 @@ export default function ScenesStep() {
     try {
       setStatus("loading");
       setMessage("Parsing screenplay...");
-      const response = await fetch("/api/parse", {
+      console.log("text: ", text);
+      const response = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text }),
       });
       if (!response.ok) throw new Error("Parse failed");
       const data: ParseResponse = await response.json();
+      console.log("data: ", data);
+      console.log("data.screenplay_id: ", data.screenplay_id);
+      window.localStorage.setItem(PARSED_SCREENPLAY_RESULTS_KEY, JSON.stringify(data.screenplay_id));
+        
       setScenes(data.scenes);
       setCache({
         scenes: data.scenes,
@@ -92,7 +99,7 @@ export default function ScenesStep() {
       <div className="mx-auto flex max-w-5xl flex-col gap-6 px-6 py-10 lg:px-10">
         <header className="space-y-2">
           <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-            Step 2 of 4
+            Step 2 of 5
           </p>
           <h1 className="text-2xl font-bold text-slate-900">Scenes</h1>
           <p className="text-slate-600">
@@ -177,10 +184,10 @@ export default function ScenesStep() {
             Back: Paste Text
           </Link>
           <Link
-            href="/steps/audio"
+            href="/steps/character-builder"
             className="rounded-full bg-[#f9cf00] px-4 py-2 text-sm font-semibold text-[#1b1b1b] shadow-md transition hover:brightness-95"
           >
-            Next: Audio Staging
+            Next: Character Builder
           </Link>
         </div>
       </div>

@@ -34,7 +34,7 @@ export default function PasteStep() {
       <div className="mx-auto flex max-w-5xl flex-col gap-6 px-6 py-10 lg:px-10">
         <header className="space-y-2">
           <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-            Step 1 of 4
+            Step 1 of 5
           </p>
           <h1 className="text-2xl font-bold text-slate-900">Paste Text (demo)</h1>
           <p className="text-slate-600">
