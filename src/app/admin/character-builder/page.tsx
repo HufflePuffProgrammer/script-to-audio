@@ -120,7 +120,6 @@ const API_URL_CHARACTER_BUILDER = "/api/admin/character-builder";
 
   const handleLoadParsedScreenplay = () => {
     const stored = window.localStorage.getItem(PARSED_SCREENPLAY_RESULTS_KEY);
-    console.log("handleLoadParsedScreenplay: stored:",stored);
     if (!stored) return;
     const parsed = JSON.parse(stored);
     const hasResults = Boolean(parsed);
@@ -144,34 +143,33 @@ const API_URL_CHARACTER_BUILDER = "/api/admin/character-builder";
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setStatus("Submitting...");
-    console.log("screenplayId:",screenplayId);
-    console.log("Text:", text);
+
     if (!screenplayId){
       setStatus("No screenplay ID found. Please load a parsed screenplay first.");
       return;
     }
       try {
-      const response = await fetch(API_URL_CHARACTER_BUILDER, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          text,
-          screenplayId,
-        }),
-      });
+        const response = await fetch(API_URL_CHARACTER_BUILDER, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            text,
+            screenplayId,
+          }),
+        });
 
-      if (!response.ok) {
-        throw new Error("Request failed");
-      }
+        if (!response.ok) {
+          throw new Error("Request failed");
+        }
 
-      const data = await response.json();
+        const data = await response.json();
 
-      console.log("Server response:", data);
-      window.localStorage.setItem(CHARACTER_BUILDER_RESULTS_KEY, JSON.stringify(data));
-      setResults(data);
-      setStatus("Built character profiles completed.");
+        // console.log("Server response:", data);
+        window.localStorage.setItem(CHARACTER_BUILDER_RESULTS_KEY, JSON.stringify(data));
+        setResults(data);
+        setStatus("Built character profiles completed.");
 
       } catch (error) {
         console.error(error);

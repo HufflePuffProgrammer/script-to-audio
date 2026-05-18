@@ -44,7 +44,7 @@ export async function buildCharacterProfile(characterInputs: CharacterInput[], a
           description: bestRankedVoice.description,
           labels: bestRankedVoice.labels,
           reason: bestRankedVoice.reason,
-        });
+          });
 
         //6- Assign Voice to Character. Upsert to database
         await upsertVoiceIdToCharacter(
