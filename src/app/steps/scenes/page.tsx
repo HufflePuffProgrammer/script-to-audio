@@ -33,6 +33,8 @@ const Progress = ({ activeIndex }: { activeIndex: number }) => {
 type ParseResponse = {
   scenes: Scene[];
   sceneCount: number;
+  screenplay_id?: string | null;
+  characterFirstScene?: Record<string, number>;
 };
 
 
