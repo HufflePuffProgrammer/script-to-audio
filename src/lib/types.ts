@@ -60,11 +60,15 @@ export type AvailableVoices = [{
     labels: string;
   }]
   
+export type VoiceLabels =
+  | string
+  | Record<string, string | undefined>;
+
 export type CharacterVoiceIds = {
   character_name: string;
   voice_id: string;
   description: string;
-  labels: string;
+  labels: VoiceLabels;
   reason: string;
 };
 
