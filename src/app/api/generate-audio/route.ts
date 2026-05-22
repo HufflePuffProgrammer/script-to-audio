@@ -1,213 +1,41 @@
 import { NextResponse } from "next/server";
-import { getElevenLabsClient } from "@/lib/elevenlabsClient";
-import { DialogueLine } from "@/lib/types";
-import { narratorLabel } from "@/lib/constants";
-import { getSupabaseAdminClient } from "@/lib/supabaseServer";
-import { isDatabaseSceneUuid } from "@/lib/isDatabaseSceneUuid";
-import { getPlayableStorageObjectUrl } from "@/lib/supabaseStoragePlayableUrl";
-import { Readable } from "node:stream";
-import { ReadableStream as WebReadableStream } from "node:stream/web";
-
-type Body = {
-  scene_id: string;
-  dialogue: DialogueLine[];
-};
-
-// Fallback voice IDs with optional env overrides (replace with Agent mapping later)
-const DEFAULT_VOICE_ID =
-  process.env.ELEVENLABS_VOICE_DEFAULT_ID ?? "EXAVITQu4vr4xnSDxMaL"; // Adam
-const ALT_VOICE_ID = process.env.ELEVENLABS_VOICE_ALT_ID ?? DEFAULT_VOICE_ID;
-const NARRATOR_VOICE_ID =
-  process.env.ELEVENLABS_VOICE_NARRATOR_ID ?? DEFAULT_VOICE_ID;
-const AUDIO_BUCKET = process.env.SUPABASE_AUDIO_BUCKET ?? "audio";
-
-const VOICE_POOL = [DEFAULT_VOICE_ID, ALT_VOICE_ID].filter(Boolean);
-
-const normalizeCharacter = (character?: string) =>
-  (character || narratorLabel).trim().toUpperCase();
-
-const genderHint = (text: string) => {
-  const lower = text.toLowerCase();
-  const maleHints = [" he ", " his ", " him ", " man", " male", " boy", " dad", " father", " mr."];
-  const femaleHints = [" she ", " her ", " hers ", " woman", " female", " girl", " mom", " mother", " ms.", " mrs."];
-
-  for (const hint of maleHints) {
-    if (lower.includes(hint)) return "male" as const;
-  }
-  for (const hint of femaleHints) {
-    if (lower.includes(hint)) return "female" as const;
-  }
-  return null;
-};
-
-const hashString = (value: string) => {
-  let hash = 0;
-  for (let i = 0; i < value.length; i += 1) {
-    hash = (hash << 5) - hash + value.charCodeAt(i);
-    hash |= 0; // force 32-bit
-  }
-  return Math.abs(hash);
-};
-
-const buildVoiceMap = (dialogue: DialogueLine[]) => {
-  const aggregated = new Map<string, string>();
-  for (const line of dialogue) {
-    const name = normalizeCharacter(line.character);
-    const existing = aggregated.get(name) ?? "";
-    aggregated.set(name, `${existing} ${line.text}`.trim());
-  }
-
-  const map = new Map<string, string>();
-  const narratorText = aggregated.get(narratorLabel) ?? "";
-
-  for (const [name, text] of aggregated.entries()) {
-    if (name === narratorLabel) {
-      map.set(name, NARRATOR_VOICE_ID);
-      continue;
-    }
-
-    if (VOICE_POOL.length === 0) {
-      map.set(name, DEFAULT_VOICE_ID);
-      continue;
-    }
-
-    const hints = genderHint(` ${text} ${narratorText} `);
-    if (hints === "male") {
-      map.set(name, DEFAULT_VOICE_ID);
-      continue;
-    }
-    if (hints === "female") {
-      map.set(name, ALT_VOICE_ID || DEFAULT_VOICE_ID);
-      continue;
-    }
-
-    const voiceIndex = hashString(`${name}:${text}`) % VOICE_POOL.length;
-    map.set(name, VOICE_POOL[voiceIndex] ?? DEFAULT_VOICE_ID);
-  }
-
-  return map;
-};
-
-const voiceIdForLine = (line: DialogueLine, voiceMap: Map<string, string>) => {
-  const fromLine = line.voice_id?.trim();
-  if (fromLine) return fromLine;
-  return voiceMap.get(normalizeCharacter(line.character)) ?? DEFAULT_VOICE_ID;
-};
-
-const toBuffer = async (audio: unknown) => {
-  // ElevenLabs SDK 2.x returns a Web ReadableStream; older versions returned Uint8Array
-  if (!audio) throw new Error("No audio returned from ElevenLabs");
-
-  // Web ReadableStream (preferred path for SDK 2.x)
-  if (typeof Readable.fromWeb === "function" && audio instanceof WebReadableStream) {
-    const nodeStream = Readable.fromWeb(audio);
-    const chunks: Buffer[] = [];
-    for await (const chunk of nodeStream) {
-      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-    }
-    return Buffer.concat(chunks);
-  }
-
-  // Node stream (just in case)
-  if (audio instanceof Readable) {
-    const chunks: Buffer[] = [];
-    for await (const chunk of audio) {
-      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-    }
-    return Buffer.concat(chunks);
-  }
-
-  // ArrayBuffer / Uint8Array fallbacks
-  if (audio instanceof ArrayBuffer) {
-    return Buffer.from(audio);
-  }
-  if (audio instanceof Uint8Array) {
-    return Buffer.from(audio);
-  }
-  if (ArrayBuffer.isView(audio)) {
-    const v = audio as ArrayBufferView;
-    return Buffer.from(v.buffer, v.byteOffset, v.byteLength);
-  }
-  const arrayBufferLike = audio as { arrayBuffer?: () => Promise<ArrayBuffer> };
-  if (typeof arrayBufferLike.arrayBuffer === "function") {
-    const ab = await arrayBufferLike.arrayBuffer();
-    return Buffer.from(ab);
-  }
-
-  throw new Error("Unsupported audio payload type from ElevenLabs");
-};
+import { parseCharParsedScreenplayToDialogueBoxes } from "@/lib/parseCharParsedScreenplayToDialogueBoxes";
+import { generateAudioFromDialogueBoxScene } from "@/lib/audio/generate-audio";
 
 export async function POST(request: Request) {
+
   try {
-    const { scene_id: sceneId, dialogue }: Body = await request.json();
-    if (!sceneId || typeof sceneId !== "string") {
-      return NextResponse.json({ error: "scene_id required" }, { status: 400 });
+    const { characterProfiles, screenplayResults } = await request.json();
+    if (characterProfiles == null || screenplayResults == null) {
+      return NextResponse.json(
+        { error: "No Character Builder Profile text provided." },
+        { status: 400 },
+      );
     }
-    if (!dialogue || !Array.isArray(dialogue) || dialogue.length === 0) {
-      return NextResponse.json({ error: "dialogue array required" }, { status: 400 });
+    const { dialogue_boxes_scenes, error } = parseCharParsedScreenplayToDialogueBoxes(
+      characterProfiles,
+      screenplayResults,
+    );
+    if (error) {
+      return NextResponse.json(
+        { error: "Failed to parse character parsed screenplay to dialogue boxes." },
+        { status: 500 },
+      );
     }
+  
+    const audio_urls: string[] = [];
 
-    const client = getElevenLabsClient();
-    const voiceMap = buildVoiceMap(dialogue);
-
-    // Use textToDialogue for multi-speaker synthesis
-    const audio = await client.textToDialogue.convert({
-      outputFormat: "mp3_44100_128",
-      inputs: dialogue.map((line) => ({
-        text: line.text,
-        voiceId: voiceIdForLine(line, voiceMap),
-      })),
-    });
-
-    // Normalize to Buffer regardless of SDK return type, then return as base64 data URL
-    const audioBuffer = await toBuffer(audio as unknown);
-    const base64 = audioBuffer.toString("base64");
-    const dataUrl = `data:audio/mpeg;base64,${base64}`;
-
-    let storedUrl: string | null = null;
-    const supabase = getSupabaseAdminClient();
-    if (supabase) {
-      const filePath = `${sceneId}/${Date.now()}.mp3`;
-      const { error: uploadError } = await supabase.storage
-        .from(AUDIO_BUCKET)
-        .upload(filePath, audioBuffer, {
-          contentType: "audio/mpeg",
-          upsert: true,
-        });
-      if (uploadError) {
-        console.error(
-          "Supabase audio upload failed:",
-          uploadError.message,
-          `(bucket: "${AUDIO_BUCKET}" — create this bucket in Supabase → Storage, or set SUPABASE_AUDIO_BUCKET)`,
-        );
-      } else {
-        storedUrl = await getPlayableStorageObjectUrl(supabase, AUDIO_BUCKET, filePath);
+    for (const scene of dialogue_boxes_scenes) {
+      const {audio_url} = await generateAudioFromDialogueBoxScene(scene,screenplayResults.screenplay_id);
+      if (audio_url == ""){
+          return NextResponse.json({error: "Failed to generate audio from dialogue box scene."}, {status: 500});
       }
-    }
+      audio_urls.push(audio_url);
 
-    const audioUrl = storedUrl ?? dataUrl;
-
-    if (supabase) {
-      if (!isDatabaseSceneUuid(sceneId)) {
-        console.warn(
-          `Skipping audio_assets row: scene_id "${sceneId}" is not a database uuid. See docs/db-setup.md.`,
-        );
-      } else {
-        const { error: persistError } = await supabase.from("audio_assets").insert({
-          scene_id: sceneId,
-          audio_url: audioUrl,
-        });
-        if (persistError) {
-          console.error("Supabase insert audio failed:", persistError);
-        }
-      }
     }
-    return NextResponse.json({ audio_url: audioUrl });
+    return NextResponse.json({ audio_urls }, { status: 200 });
   } catch (error) {
-    console.error("Generate audio API error:", error);
-    const message =
-      error instanceof Error ? error.message : "Failed to generate audio.";
-    return NextResponse.json({ error: message }, { status: 500 });
+      console.error("Failed to generate audio:", error);
+      return NextResponse.json({ audio_urls: [] }, { status: 500 });
   }
 }
-

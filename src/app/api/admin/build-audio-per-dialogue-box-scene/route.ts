@@ -3,7 +3,9 @@ import { generateAudioFromDialogueBoxScene } from "@/lib/audio/generate-audio";
 export async function POST(request: Request){
     try{
         console.log("build-audio-per-dialogue-box-scene: BEFORE");
-        const {dialogue_boxes_scenes,parsedScreenplayId} = await request.json();
+        const {characterVoiceIds,screenplayId} = await request.json();
+        console.log("build-audio-per-dialogue-box-scene: characterVoiceIds", characterVoiceIds);
+        console.log("build-audio-per-dialogue-box-scene: screenplayId", screenplayId);
         if (dialogue_boxes_scenes ==null){
             return NextResponse.json({error:"No dialogue boxes scenes provided."}, {status: 401});
         }
@@ -15,6 +17,7 @@ export async function POST(request: Request){
             return NextResponse.json({error: "Failed to build audio per dialogue box scene."}, {status: 401});
         }
         return NextResponse.json({audio_url}, {status:200});
+       // return NextResponse.json({message: "build-audio-per-dialogue-box-scene: success"}, {status:200});
     }
     catch(error){
         console.error("Failed to build: API error", error);

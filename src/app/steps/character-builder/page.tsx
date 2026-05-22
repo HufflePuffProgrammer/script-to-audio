@@ -98,7 +98,8 @@ export default function CharacterBuilderStep() {
   useEffect(() => {
     const stored = window.localStorage.getItem(PARSED_SCREENPLAY_RESULTS_KEY);
     if (!stored) return;
-    setScreenplayId(JSON.parse(stored));
+    const parsedScreenplay = JSON.parse(stored);
+    setScreenplayId(parsedScreenplay.screenplay_id);
 
     const storedCharacterBuilder = window.localStorage.getItem(CHARACTER_BUILDER_RESULTS_KEY);
     if (!storedCharacterBuilder) return;

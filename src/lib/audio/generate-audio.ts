@@ -140,6 +140,8 @@ const toBuffer = async (audio: unknown) => {
 };
 
 export async function generateAudioFromDialogueBoxScene(dialogueBoxScene: DialogueBoxScene,parsedScreenplayId: string) {
+  const {scene_id, dialogue_boxes} = dialogueBoxScene;
+  
   try {
     const { scene_id, dialogue_boxes } = dialogueBoxScene;
     if (scene_id === undefined || scene_id === null || String(scene_id).trim() === "") {
@@ -159,7 +161,7 @@ export async function generateAudioFromDialogueBoxScene(dialogueBoxScene: Dialog
     const client = getElevenLabsClient();
     const voiceMap = buildVoiceMap(dialogue_boxes);
     // Use textToDialogue for multi-speaker synthesis
-       
+
     const audio = await client.textToDialogue.convert({
       outputFormat: "mp3_44100_128",
       inputs: dialogue_boxes.map((line) => ({
@@ -196,6 +198,7 @@ export async function generateAudioFromDialogueBoxScene(dialogueBoxScene: Dialog
     }
 
     const audioUrl = storedUrl ?? dataUrl;
+
     if (supabase) {
       if (!isDatabaseUuid(sceneKey)) {
         console.warn(
@@ -212,13 +215,15 @@ export async function generateAudioFromDialogueBoxScene(dialogueBoxScene: Dialog
         }
       }
     }
-    console.log("generateAudioFromDialogueBoxScene: audioUrl", audioUrl);
-    return { audio_url: audioUrl, error: null };
+
+    //return { audio_url: audioUrl, error: error };
+    return { audio_url: audioUrl };
   } catch (error) {
     console.error("Generate audio API error:", error);
     const message =
       error instanceof Error ? error.message : "Failed to generate audio.";
     return { audio_url: "", error: message };
+    //return { audio_url: "" };
   }
 }
 

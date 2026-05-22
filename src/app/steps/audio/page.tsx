@@ -4,7 +4,15 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useScriptText } from "@/lib/useScriptText";
 import { useParsedScenes, ParsedScenesCache } from "@/lib/useParsedScenes";
-import { Scene } from "@/lib/types";
+import {
+  CharacterBuilderResults,
+  ParsedScreenplayResults,
+  Scene,
+} from "@/lib/types";
+import {
+  CHARACTER_BUILDER_RESULTS_KEY,
+  PARSED_SCREENPLAY_RESULTS_KEY,
+} from "@/lib/constants";
 
 const steps = ["Paste Text", "Scenes", "Audio Staging", "Generate complete audio"];
 
@@ -42,9 +50,12 @@ export default function AudioStep() {
   const [scenes, setScenes] = useState<Scene[]>([]);
   const [audioUrls, setAudioUrls] = useState<Record<string, string>>({});
   const [audioStatus, setAudioStatus] = useState<Record<string, "idle" | "loading" | "ready" | "error">>({});
-
+  const [characterProfiles, setCharacterProfiles] =
+    useState<CharacterBuilderResults | null>(null);
+const [screenplayId, setScreenplayId] = useState<string>("");
+const [screenplayResults, setScreenplayResults] = useState<ParsedScreenplayResults | null>(null);
   const firstThreeScenes = useMemo(() => scenes.slice(0, 3), [scenes]);
-
+  const API_URL = "/api/generate-audio";
   const parse = async () => {
     if (!hasText) {
       setMessage("No text found. Paste screenplay in Step 1 first.");
@@ -77,6 +88,18 @@ export default function AudioStep() {
   };
 
   useEffect(() => {
+    const storedScreenplayResults = window.localStorage.getItem(PARSED_SCREENPLAY_RESULTS_KEY);
+    if (!storedScreenplayResults) return;
+    const parsedScreenplayResults = JSON.parse(storedScreenplayResults);
+
+    setScreenplayResults(parsedScreenplayResults);
+    setScreenplayId(parsedScreenplayResults.screenplay_id);
+
+    const storedCharacterProfiles = window.localStorage.getItem(CHARACTER_BUILDER_RESULTS_KEY);
+    if (!storedCharacterProfiles) return;
+    const parsedCharacterProfiles = JSON.parse(storedCharacterProfiles);
+
+    setCharacterProfiles(parsedCharacterProfiles);
     if (hasCachedScenes && cached) {
       setScenes(cached.scenes);
       if (cached.audioUrls) setAudioUrls(cached.audioUrls);
@@ -90,28 +113,55 @@ export default function AudioStep() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasText, hasCachedScenes, cached]);
 
+  
+
+
   const generateAudio = async (scene: Scene) => {
+    if (!characterProfiles || !screenplayResults) {
+      setAudioStatus((prev) => ({ ...prev, [scene.id]: "error" }));
+      return;
+    }
+
     setAudioStatus((prev) => ({ ...prev, [scene.id]: "loading" }));
     try {
-      const response = await fetch("/api/generate-audio", {
+      const response = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scene_id: scene.id, dialogue: scene.dialogue }),
+        body: JSON.stringify({ characterProfiles, screenplayResults }),
       });
-      if (!response.ok) throw new Error("Generate failed");
-      const data: { audio_url: string } = await response.json();
-      setAudioUrls((prev) => {
-        const next = { ...prev, [scene.id]: data.audio_url };
-        if (cached) {
-          setCache({
-            ...cached,
-            audioUrls: { ...(cached.audioUrls || {}), [scene.id]: data.audio_url },
-          });
+      const data: { audio_urls?: string[]; error?: string } = await response.json();
+      if (!response.ok || data.error) {
+        throw new Error(data.error ?? "Generate failed");
+      }
+
+      const urls = data.audio_urls ?? [];
+      const sceneList = screenplayResults.scenes ?? scenes;
+      const urlBySceneId: Record<string, string> = {};
+      sceneList.forEach((s, index) => {
+        const url = urls[index];
+        if (url) urlBySceneId[s.id] = url;
+      });
+
+      if (!urlBySceneId[scene.id]) {
+        throw new Error("No audio URL returned for this scene");
+      }
+
+      setAudioUrls((prev) => ({ ...prev, ...urlBySceneId }));
+      setAudioStatus((prev) => {
+        const next = { ...prev };
+        for (const id of Object.keys(urlBySceneId)) {
+          next[id] = "ready";
         }
         return next;
       });
-      setAudioStatus((prev) => ({ ...prev, [scene.id]: "ready" }));
+      if (cached) {
+        setCache({
+          ...cached,
+          audioUrls: { ...(cached.audioUrls || {}), ...urlBySceneId },
+        });
+      }
     } catch (error) {
+      console.error("Generate audio failed:", error);
       setAudioStatus((prev) => ({ ...prev, [scene.id]: "error" }));
     }
   };
