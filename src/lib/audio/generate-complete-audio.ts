@@ -30,19 +30,23 @@ export async function generateCompleteAudio(
   dialogue_boxes_scenes: DialogueBoxScene[],
   parsedScreenplayId: string,
 ) {
-  if (dialogue_boxes_scenes == null) {
+
+   if (dialogue_boxes_scenes == null) {
     return { audio_url: "", error: "No dialogue boxes scenes provided." };
   }
   if (parsedScreenplayId == null || parsedScreenplayId.trim() === "") {
     return { audio_url: "", error: "No parsed screenplay id provided." };
   }
   if (!isDatabaseUuid(parsedScreenplayId)) {
+    console.error("Parsed screenplay id must be a uuid.",parsedScreenplayId);
     return { audio_url: "", error: "Parsed screenplay id must be a uuid." };
   }
 
   try {
+
     const supabase = getSupabaseAdminClient();
     if (!supabase) {
+      console.error("Supabase is not configured.");
       return { audio_url: "", error: "Supabase is not configured." };
     }
 
@@ -70,6 +74,7 @@ export async function generateCompleteAudio(
         return { audio_url: "", error: `Failed to download scene audio (${storagePath}).` };
       }
       const arrayBuffer = await audioFile.arrayBuffer();
+
       audioBuffers.push(Buffer.from(arrayBuffer));
     }
 
@@ -80,6 +85,7 @@ export async function generateCompleteAudio(
     const mergedBuffer = await concatenateMp3Buffers(audioBuffers);
 
     const filePath = `${parsedScreenplayId}/complete-${Date.now()}.mp3`;
+
     const { error: uploadError } = await supabase.storage.from(AUDIO_BUCKET).upload(filePath, mergedBuffer, {
       contentType: "audio/mpeg",
       upsert: true,

@@ -66,7 +66,7 @@ export default function ScenesStep() {
       const data: ParseResponse = await response.json();
       console.log("data: ", data);
       console.log("data.screenplay_id: ", data.screenplay_id);
-      window.localStorage.setItem(PARSED_SCREENPLAY_RESULTS_KEY, JSON.stringify(data.screenplay_id));
+      window.localStorage.setItem(PARSED_SCREENPLAY_RESULTS_KEY, JSON.stringify(data));
         
       setScenes(data.scenes);
       setCache({
