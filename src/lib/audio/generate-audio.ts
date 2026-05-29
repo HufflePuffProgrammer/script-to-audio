@@ -14,8 +14,11 @@ type Body = {
 };
 
 // Fallback voice IDs with optional env overrides (replace with Agent mapping later)
-const DEFAULT_VOICE_ID =
-  process.env.ELEVENLABS_VOICE_DEFAULT_ID ?? "XrExE9yKIg1WjnnlVkGX"; // Adam
+//const DEFAULT_VOICE_ID =
+  //process.env.ELEVENLABS_VOICE_DEFAULT_ID ?? "XrExE9yKIg1WjnnlVkGX"; // Adam
+  const DEFAULT_VOICE_ID = process.env.ELEVENLABS_VOICE_DEFAULT_ID="nPczCjzI2devNBz1zQrb"
+
+
 /** Prefer a second voice via env; avoid hardcoding a second preset ID (often 404 on other accounts). */
 const ALT_VOICE_ID = process.env.ELEVENLABS_VOICE_ALT_ID ?? DEFAULT_VOICE_ID;
 const NARRATOR_VOICE_ID =

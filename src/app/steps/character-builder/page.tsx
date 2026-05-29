@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useScriptText } from "@/lib/useScriptText";
+import { useScriptText } from "@/lib/useScriptTextDemo";
 import { CharacterBuilderResults, CharacterVoiceIds, VoiceLabels } from "@/lib/types";
 import {
   CHARACTER_BUILDER_RESULTS_KEY,
@@ -18,7 +18,7 @@ const Progress = ({ activeIndex }: { activeIndex: number }) => {
       <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-slate-500">
         {steps.map((label, idx) => (
           <span key={label} className={idx <= activeIndex ? "text-[#111827]" : "text-slate-400"}>
-            {label}
+            {label} 
           </span>
         ))}
       </div>
@@ -90,7 +90,7 @@ function CharacterVoiceCard({ assignment }: { assignment: CharacterVoiceIds }) {
 export default function CharacterBuilderStep() {
   const { hasText } = useScriptText();
   const [status, setStatus] = useState<"idle" | "loading" | "error" | "ready">("idle");
-  const [message, setMessage] = useState("Paste text in Step 1, then parse.");
+  const [message, setMessage] = useState("This may take a few minutes...");
   const [characterVoiceIds, setCharacterVoiceIds] = useState<CharacterVoiceIds[]>([]);
   const API_URL = "/api/character-builder";
   const [screenplayId, setScreenplayId] = useState<string | null>(null);
@@ -102,6 +102,7 @@ export default function CharacterBuilderStep() {
     setScreenplayId(parsedScreenplay.screenplay_id);
 
     const storedCharacterBuilder = window.localStorage.getItem(CHARACTER_BUILDER_RESULTS_KEY);
+    console.log("storedCharacterBuilder:", storedCharacterBuilder);
     if (!storedCharacterBuilder) return;
     const parsedCharacterBuilder = JSON.parse(storedCharacterBuilder);
     setCharacterVoiceIds(parsedCharacterBuilder.characterVoiceIds ?? []);
@@ -122,7 +123,7 @@ export default function CharacterBuilderStep() {
       window.localStorage.setItem(CHARACTER_BUILDER_RESULTS_KEY, JSON.stringify(data));
       setStatus("ready");
       setMessage(
-        `Built ${data.characterVoiceIds?.length ?? 0} character voice assignment(s).`,
+        `Built Character Profiles - ${data.characterVoiceIds?.length ?? 0} voice assignment(s).`,
       );
     } catch {
       setStatus("error");
@@ -139,7 +140,7 @@ export default function CharacterBuilderStep() {
           </p>
           <h1 className="text-2xl font-bold text-slate-900">Character Builder</h1>
           <p className="text-slate-600">
-            Assign a voice to each character before audio staging.
+            Build a character profile. This is AI generated. Assign the best voiceID to each character..
           </p>
           <Progress activeIndex={2} />
         </header>
@@ -149,7 +150,7 @@ export default function CharacterBuilderStep() {
             <button
               type="button"
               onClick={buildCharacters}
-              disabled={!hasText || status === "loading"}
+              disabled={!hasText || status === "loading" || characterVoiceIds.length > 0}
               className="rounded-full bg-[#f9cf00] px-4 py-2 text-sm font-semibold text-[#1b1b1b] shadow-md transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {status === "loading" ? "Building..." : "Build Characters"}
@@ -184,12 +185,15 @@ export default function CharacterBuilderStep() {
           >
             Back: Scenes
           </Link>
-          <Link
-            href="/steps/audio"
-            className="rounded-full bg-[#f9cf00] px-4 py-2 text-sm font-semibold text-[#1b1b1b] shadow-md transition hover:brightness-95"
-          >
-            Next: Audio Staging
-          </Link>
+          {characterVoiceIds.length > 0 && (
+            <Link
+              href="/steps/audio"
+              className="rounded-full bg-[#f9cf00] px-4 py-2 text-sm font-semibold text-[#1b1b1b] shadow-md transition hover:brightness-95"
+            >
+              Next: Audio Staging
+            </Link>
+          )}
+          
         </div>
       </div>
     </main>
