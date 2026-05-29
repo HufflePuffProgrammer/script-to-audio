@@ -2,13 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useScriptText } from "@/lib/useScriptText";
+import { useScriptText } from "@/lib/useScriptTextDemo";
 import { useParsedScenes, ParsedScenesCache } from "@/lib/useParsedScenes";
 import { Scene } from "@/lib/types";
 import { PARSED_SCREENPLAY_RESULTS_KEY } from "@/lib/constants";
 
 const steps = ["Paste Text", "Scenes","Character Builder", "Audio Staging", "Generate complete audio"];
 
+// TODO: add this to a common component.
 const Progress = ({ activeIndex }: { activeIndex: number }) => {
   const progress = (activeIndex / (steps.length - 1)) * 100;
   return (
@@ -16,7 +17,7 @@ const Progress = ({ activeIndex }: { activeIndex: number }) => {
       <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-slate-500">
         {steps.map((label, idx) => (
           <span key={label} className={idx <= activeIndex ? "text-[#111827]" : "text-slate-400"}>
-            {label}
+            {label} 
           </span>
         ))}
       </div>
@@ -30,6 +31,7 @@ const Progress = ({ activeIndex }: { activeIndex: number }) => {
   );
 };
 
+// TODO: add this to a common component.
 type ParseResponse = {
   scenes: Scene[];
   sceneCount: number;
@@ -46,6 +48,7 @@ export default function ScenesStep() {
   const [scenes, setScenes] = useState<Scene[]>([]);
   const API_URL = "/api/parse";
 
+  // TODO: Add a way to view all scenes.
   const firstThreeScenes = useMemo(() => scenes.slice(0, 3), [scenes]);
 
   const parse = async () => {
@@ -76,7 +79,7 @@ export default function ScenesStep() {
         audioUrls: cached?.audioUrls || {},
       });
       setStatus("ready");
-      setMessage(`Parsed ${data.sceneCount} scene(s). Showing the first three below.`);
+      setMessage(`Parsed screenplay - ${data.sceneCount} scene(s). Showing the first three below.`);
     } catch (error) {
       setStatus("error");
       setMessage("Failed to parse screenplay. Please try again.");
@@ -87,7 +90,7 @@ export default function ScenesStep() {
     if (hasCachedScenes && cached) {
       setScenes(cached.scenes);
       setStatus("ready");
-      setMessage(`Loaded ${cached.sceneCount} scene(s) from cache.`);
+      setMessage(`Parsed screenplay - ${cached.sceneCount} scene(s). Showing the first three below.`);
       return;
     }
     if (hasText) {
@@ -105,21 +108,14 @@ export default function ScenesStep() {
           </p>
           <h1 className="text-2xl font-bold text-slate-900">Scenes</h1>
           <p className="text-slate-600">
-            Parses your pasted screenplay (mock server parse) and shows the first three scenes.
+            Parses your pasted screenplay into separate scenes.
           </p>
           <Progress activeIndex={1} />
         </header>
 
         <section className="space-y-3 rounded-3xl bg-white p-6 shadow-md ring-1 ring-slate-200">
           <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={parse}
-              disabled={!hasText || status === "loading"}
-              className="rounded-full bg-[#f9cf00] px-4 py-2 text-sm font-semibold text-[#1b1b1b] shadow-md transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {status === "loading" ? "Parsing..." : "Parse screenplay"}
-            </button>
+
             <span className="text-sm text-slate-600">{message}</span>
           </div>
           {!hasText && (
@@ -185,12 +181,24 @@ export default function ScenesStep() {
           >
             Back: Paste Text
           </Link>
-          <Link
+          {scenes && (
+            <Link
             href="/steps/character-builder"
             className="rounded-full bg-[#f9cf00] px-4 py-2 text-sm font-semibold text-[#1b1b1b] shadow-md transition hover:brightness-95"
           >
             Next: Character Builder
           </Link>
+          )}
+          {!scenes && (
+            <button
+              type="button"
+              disabled
+              className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 shadow-md border-gray-500"
+            >
+              Next: Character Builder
+            </button>
+          )}
+          
         </div>
       </div>
     </main>

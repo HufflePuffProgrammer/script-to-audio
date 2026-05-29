@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useScriptText } from "@/lib/useScriptText";
+import { useScriptText } from "@/lib/useScriptTextDemo";
 import { useParsedScenes, ParsedScenesCache } from "@/lib/useParsedScenes";
 import {
   CharacterBuilderResults,
@@ -14,7 +14,7 @@ import {
   PARSED_SCREENPLAY_RESULTS_KEY,
 } from "@/lib/constants";
 
-const steps = ["Paste Text", "Scenes", "Audio Staging", "Generate complete audio"];
+const steps = ["Paste Text", "Scenes", "Character Builder", "Audio Staging", "Generate complete audio"];
 
 const Progress = ({ activeIndex }: { activeIndex: number }) => {
   const progress = (activeIndex / (steps.length - 1)) * 100;
@@ -46,14 +46,15 @@ export default function AudioStep() {
   const { text, hasText } = useScriptText();
   const { data: cached, setData: setCache, hasScenes: hasCachedScenes } = useParsedScenes();
   const [status, setStatus] = useState<"idle" | "loading" | "error" | "ready">("idle");
-  const [message, setMessage] = useState("Paste & parse first, then stage audio.");
+  const [message, setMessage] = useState("Generate audio.");
   const [scenes, setScenes] = useState<Scene[]>([]);
   const [audioUrls, setAudioUrls] = useState<Record<string, string>>({});
-  const [audioStatus, setAudioStatus] = useState<Record<string, "idle" | "loading" | "ready" | "error">>({});
+  const [audioStatus, setAudioStatus] = useState<Record<string, "idle" | "loading" |"generating" | "ready" | "error">>({});
+  const [generateAudioStatus, setGenerateAudioStatus] = useState<"idle" | "loading" | "generating" | "ready" | "error">("idle");
   const [characterProfiles, setCharacterProfiles] =
     useState<CharacterBuilderResults | null>(null);
-const [screenplayId, setScreenplayId] = useState<string>("");
-const [screenplayResults, setScreenplayResults] = useState<ParsedScreenplayResults | null>(null);
+  const [screenplayId, setScreenplayId] = useState<string>("");
+  const [screenplayResults, setScreenplayResults] = useState<ParsedScreenplayResults | null>(null);
   const firstThreeScenes = useMemo(() => scenes.slice(0, 3), [scenes]);
   const API_URL = "/api/generate-audio";
   const parse = async () => {
@@ -64,6 +65,7 @@ const [screenplayResults, setScreenplayResults] = useState<ParsedScreenplayResul
     try {
       setStatus("loading");
       setMessage("Parsing screenplay...");
+      setGenerateAudioStatus("loading");
       const response = await fetch("/api/parse", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -81,9 +83,12 @@ const [screenplayResults, setScreenplayResults] = useState<ParsedScreenplayResul
       setCache(payload);
       setStatus("ready");
       setMessage(`Parsed ${data.sceneCount} scene(s). Showing the first three below.`);
+      setGenerateAudioStatus("ready");
+  
     } catch (error) {
       setStatus("error");
       setMessage("Failed to parse screenplay. Please try again.");
+      setGenerateAudioStatus("error");
     }
   };
 
@@ -102,14 +107,22 @@ const [screenplayResults, setScreenplayResults] = useState<ParsedScreenplayResul
     setCharacterProfiles(parsedCharacterProfiles);
     if (hasCachedScenes && cached) {
       setScenes(cached.scenes);
-      if (cached.audioUrls) setAudioUrls(cached.audioUrls);
       setStatus("ready");
       setMessage(`Loaded ${cached.sceneCount} scene(s) from cache.`);
+      if (Object.keys(cached.audioUrls).length > 0) 
+        {
+          console.log("cached.audioUrls.length:", Object.keys(cached.audioUrls).length);
+          setAudioUrls(cached.audioUrls);
+          setGenerateAudioStatus("ready");
+          setMessage("Audio generated successfully. Staging the first three below.");
+        }
+
       return;
     }
     if (hasText) {
       parse();
     }
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasText, hasCachedScenes, cached]);
 
@@ -121,7 +134,8 @@ const [screenplayResults, setScreenplayResults] = useState<ParsedScreenplayResul
       setAudioStatus((prev) => ({ ...prev, [scene.id]: "error" }));
       return;
     }
-
+    setMessage("Generating audio. This may take a few minutes...");
+    setGenerateAudioStatus("loading");
     setAudioStatus((prev) => ({ ...prev, [scene.id]: "loading" }));
     try {
       const response = await fetch(API_URL, {
@@ -145,6 +159,8 @@ const [screenplayResults, setScreenplayResults] = useState<ParsedScreenplayResul
       if (!urlBySceneId[scene.id]) {
         throw new Error("No audio URL returned for this scene");
       }
+      setGenerateAudioStatus("ready");
+      setMessage("Audio generated successfully. Staging the first three below.");
 
       setAudioUrls((prev) => ({ ...prev, ...urlBySceneId }));
       setAudioStatus((prev) => {
@@ -171,43 +187,27 @@ const [screenplayResults, setScreenplayResults] = useState<ParsedScreenplayResul
       <div className="mx-auto flex max-w-5xl flex-col gap-6 px-6 py-10 lg:px-10">
         <header className="space-y-2">
           <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-            Step 3 of 4
+            Step 4 of 5
           </p>
           <h1 className="text-2xl font-bold text-slate-900">Audio Staging</h1>
           <p className="text-slate-600">
-            Parses your pasted screenplay and lists the first three scenes with audio bar placeholders.
+            Stages the audio for each of the first three scenes.
           </p>
-          <Progress activeIndex={2} />
-          <div className="flex flex-wrap items-center gap-3 text-sm">
-            <Link
-              href="/steps/debug"
-              className="inline-flex items-center gap-1 rounded-full border border-slate-200 px-3 py-1 font-semibold text-slate-700 transition hover:bg-slate-50"
-            >
-              ElevenLabs debug page
-            </Link>
-            <span className="text-slate-500">
-              Opens a sample call to /api/generate-audio with playback.
-            </span>
-            <Link
-              href="/admin"
-              className="inline-flex items-center gap-1 rounded-full border border-slate-200 px-3 py-1 font-semibold text-slate-700 transition hover:bg-slate-50"
-            >
-              Admin DB check
-            </Link>
-          </div>
+          <Progress activeIndex={3} />
         </header>
 
         <section className="space-y-3 rounded-3xl bg-white p-6 shadow-md ring-1 ring-slate-200">
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
-              onClick={parse}
-              disabled={!hasText || status === "loading"}
-              className="rounded-full bg-[#f9cf00] px-4 py-2 text-sm font-semibold text-[#1b1b1b] shadow-md transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {status === "loading" ? "Parsing..." : "Parse screenplay"}
+                onClick={() => generateAudio(firstThreeScenes[0])}
+                disabled={generateAudioStatus === "loading" || generateAudioStatus === "ready"}
+                className="rounded-full bg-[#f9cf00] px-4 py-2 text-sm font-semibold text-[#1b1b1b] shadow-md transition hover:brightness-95"
+          disabled={generateAudioStatus === "loading" || generateAudioStatus === "ready"}
+           >
+              {generateAudioStatus === "loading" ? "Generating..." : generateAudioStatus === "ready" ? "Generated" : "Generate audio"}
             </button>
-            <span className="text-sm text-slate-600">{message}</span>
+           <span className="text-sm text-slate-600">{message}: {generateAudioStatus}</span>
           </div>
           {!hasText && (
             <p className="text-sm text-red-600">
@@ -235,15 +235,7 @@ const [screenplayResults, setScreenplayResults] = useState<ParsedScreenplayResul
                 <div className="h-full w-[45%] rounded-full bg-gradient-to-r from-indigo-500 to-purple-500" />
               </div>
               <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => generateAudio(scene)}
-                  disabled={audioStatus[scene.id] === "loading"}
-                  className="rounded-full bg-[#f9cf00] px-3 py-1 text-xs font-semibold text-[#1b1b1b] shadow-sm transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {audioStatus[scene.id] === "loading" ? "Generating..." : "Generate audio"}
-                </button>
-                {audioStatus[scene.id] === "error" && (
+               {audioStatus[scene.id] === "error" && (
                   <span className="text-xs text-red-600">Failed. Retry.</span>
                 )}
               </div>
@@ -258,17 +250,27 @@ const [screenplayResults, setScreenplayResults] = useState<ParsedScreenplayResul
 
         <div className="flex justify-between">
           <Link
-            href="/steps/scenes"
+            href="/steps/character-builder"
             className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
           >
-            Back: Scenes
+            Back: Character Builder
           </Link>
-          <Link
-            href="/steps/generate"
-            className="rounded-full bg-[#f9cf00] px-4 py-2 text-sm font-semibold text-[#1b1b1b] shadow-md transition hover:brightness-95"
-          >
-            Next: Generate complete audio
-          </Link>
+          {generateAudioStatus === "ready" ? (
+            <Link
+              href="/steps/generate"
+              className="rounded-full bg-[#f9cf00] px-4 py-2 text-sm font-semibold text-[#1b1b1b] shadow-md transition hover:brightness-95"
+            >
+              Next: Generate Complete Audio {generateAudioStatus}
+            </Link>
+          ) : (
+            <button
+              type="button"
+              disabled
+              className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 shadow-md transition disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Next: Generate Complete Audio {generateAudioStatus}
+            </button>
+          )}
         </div>
       </div>
     </main>

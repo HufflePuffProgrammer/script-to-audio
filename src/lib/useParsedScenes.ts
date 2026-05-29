@@ -21,6 +21,7 @@ export function useParsedScenes() {
     if (saved) {
       try {
         setDataState(JSON.parse(saved));
+        console.log("saved", saved);
       } catch {
         // ignore invalid cache
       }
@@ -38,11 +39,12 @@ export function useParsedScenes() {
   };
 
   const clear = () => setData(null);
-
+  const clearParsedScenes = () => setData(null);
   return {
     data,
     setData,
     clear,
+    clearParsedScenes,
     hasScenes: !!data?.scenes?.length,
   };
 }

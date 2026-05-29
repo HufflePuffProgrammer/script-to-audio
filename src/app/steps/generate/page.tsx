@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-const steps = ["Paste Text", "Scenes", "Audio Staging", "Generate complete audio"];
+const steps = ["Paste Text", "Scenes", "Character Builder","Audio Staging", "Generate complete audio"];
 
 const Progress = ({ activeIndex }: { activeIndex: number }) => {
   const progress = (activeIndex / (steps.length - 1)) * 100;
@@ -31,20 +31,20 @@ export default function GenerateStep() {
       <div className="mx-auto flex max-w-5xl flex-col gap-6 px-6 py-10 lg:px-10">
         <header className="space-y-2">
           <p className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-            Step 4 of 4
+            Step 5 of 5
           </p>
-          <h1 className="text-2xl font-bold text-slate-900">Generate complete audio (demo)</h1>
+          <h1 className="text-2xl font-bold text-slate-900">Generate complete audio </h1>
           <p className="text-slate-600">
             Non-functional preview. Demonstrates the final action to render and download full audio.
           </p>
-          <Progress activeIndex={3} />
+          <Progress activeIndex={4} />
         </header>
 
         <section className="space-y-3 rounded-3xl bg-white p-6 shadow-md ring-1 ring-slate-200">
           <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
             <p className="text-sm font-semibold text-slate-900">Full render</p>
             <p className="text-sm text-slate-600">
-              Replace this call-to-action with a real `/api/generate-audio` integration that batches scenes and stores MP3s.
+              Concatenates staged audio for all scenes into a single complete audio file.
             </p>
           </div>
           <button
@@ -52,10 +52,10 @@ export default function GenerateStep() {
             className="rounded-full bg-[#f9cf00] px-4 py-2 text-sm font-semibold text-[#1b1b1b] shadow-md transition hover:brightness-95"
             disabled
           >
-            Generate complete audio (disabled demo)
+            Generate complete audio (disabled)
           </button>
           <p className="text-xs text-slate-500">
-            Buttons and fields are illustrative only. Hook up Supabase storage and ElevenLabs when ready.
+            This may take a few minutes...
           </p>
         </section>
 
@@ -70,7 +70,7 @@ export default function GenerateStep() {
             href="/"
             className="rounded-full bg-[#f9cf00] px-4 py-2 text-sm font-semibold text-[#1b1b1b] shadow-md transition hover:brightness-95"
           >
-            Done / Back to landing
+            Back to landing
           </Link>
         </div>
       </div>

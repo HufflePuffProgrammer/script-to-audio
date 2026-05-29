@@ -1,9 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useScriptText } from "@/lib/useScriptText";
+import { useScriptText } from "@/lib/useScriptTextDemo";
+import { clearAdminWorkflowLocalStorage } from "@/lib/adminWorkflowStorage";
+import { useParsedScenes } from "@/lib/useParsedScenes";
+const STORAGE_KEY = "script-to-audio:parsedScenes";
 
-const steps = ["Paste Text", "Scenes", "Audio Staging", "Generate complete audio"];
+const steps = ["Paste Text", "Scenes", "Character Builder", "Audio Staging", "Generate complete audio"];
 
 const Progress = ({ activeIndex }: { activeIndex: number }) => {
   const progress = (activeIndex / (steps.length - 1)) * 100;
@@ -12,7 +15,7 @@ const Progress = ({ activeIndex }: { activeIndex: number }) => {
       <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-slate-500">
         {steps.map((label, idx) => (
           <span key={label} className={idx <= activeIndex ? "text-[#111827]" : "text-slate-400"}>
-            {label}
+            {label}  
           </span>
         ))}
       </div>
@@ -27,8 +30,21 @@ const Progress = ({ activeIndex }: { activeIndex: number }) => {
 };
 
 export default function PasteStep() {
-  const { text, setText, clear, hasText, characters } = useScriptText();
-
+  const { text, setText,hasText, clear, clearParsedScreenplay, clearCharacterBuilder,  characters } = useScriptText();
+  //const { clearParsedScenes } = useParsedScenes();
+  const handleClear = () => {
+    clear();
+    console.log("clearAdminWorkflowLocalStorage");
+    window.localStorage.removeItem(STORAGE_KEY);
+    const saved =   window.localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      console.log("saved", saved);
+    } else {
+      console.log("no saved");
+    } 
+    clearParsedScreenplay();
+    clearCharacterBuilder();
+  }
   return (
     <main className="min-h-screen bg-[#f4f6fb]">
       <div className="mx-auto flex max-w-5xl flex-col gap-6 px-6 py-10 lg:px-10">
@@ -38,13 +54,14 @@ export default function PasteStep() {
           </p>
           <h1 className="text-2xl font-bold text-slate-900">Paste Text (demo)</h1>
           <p className="text-slate-600">
-            Non-functional preview. Drop screenplay text in the box as a demonstration only.
+            Non-functional preview. Demonstration only.
           </p>
-          <Progress activeIndex={0} />
+          <Progress activeIndex={0} /> 
         </header>
 
         <section className="space-y-3 rounded-3xl bg-white p-6 shadow-md ring-1 ring-slate-200">
           <textarea
+          readOnly
             placeholder="Paste screenplay text..."
             className="min-h-[280px] w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 shadow-inner focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100"
             value={text}
@@ -52,17 +69,15 @@ export default function PasteStep() {
           />
           <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-600">
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-2 rounded-full bg-[#f9cf00]/80 px-3 py-1 text-xs font-semibold text-[#1b1b1b] shadow-sm">
-                Saved locally
-              </span>
-              <span>{characters} characters</span>
+              
             </div>
             <button
               type="button"
-              onClick={clear}
+              onClick={handleClear}
+              
               className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
             >
-              Clear
+             Reset
             </button>
           </div>
         </section>
@@ -74,14 +89,26 @@ export default function PasteStep() {
           >
             Back to landing
           </Link>
-          <Link
-            href="/steps/scenes"
-            className="rounded-full bg-[#f9cf00] px-4 py-2 text-sm font-semibold text-[#1b1b1b] shadow-md transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
-            aria-disabled={!hasText}
-            tabIndex={hasText ? 0 : -1}
-          >
-            Next: Scenes
-          </Link>
+          {hasText && (
+              <Link
+              href="/steps/scenes"
+              className="rounded-full bg-[#f9cf00] px-4 py-2 text-sm font-semibold text-[#1b1b1b] shadow-md transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60"
+              aria-disabled= {false}
+              tabIndex={hasText ? 0 : -1}
+            >
+              Next: Scenes
+            </Link>
+          )}
+          {!hasText && (
+            <button
+              type="button"
+              disabled
+              className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 shadow-md border-gray-500"
+            >
+              Next: Scenes
+            </button>
+
+          )}
         </div>
       </div>
     </main>
