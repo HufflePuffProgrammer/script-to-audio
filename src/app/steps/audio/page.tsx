@@ -109,8 +109,7 @@ export default function AudioStep() {
       setScenes(cached.scenes);
       setStatus("ready");
       setMessage(`Loaded ${cached.sceneCount} scene(s) from cache.`);
-      if (Object.keys(cached.audioUrls).length > 0) 
-        {
+      if (cached.audioUrls && Object.keys(cached.audioUrls).length > 0) {
           console.log("cached.audioUrls.length:", Object.keys(cached.audioUrls).length);
           setAudioUrls(cached.audioUrls);
           setGenerateAudioStatus("ready");
@@ -203,7 +202,7 @@ export default function AudioStep() {
                 onClick={() => generateAudio(firstThreeScenes[0])}
                 disabled={generateAudioStatus === "loading" || generateAudioStatus === "ready"}
                 className="rounded-full bg-[#f9cf00] px-4 py-2 text-sm font-semibold text-[#1b1b1b] shadow-md transition hover:brightness-95"
-          disabled={generateAudioStatus === "loading" || generateAudioStatus === "ready"}
+
            >
               {generateAudioStatus === "loading" ? "Generating..." : generateAudioStatus === "ready" ? "Generated" : "Generate audio"}
             </button>

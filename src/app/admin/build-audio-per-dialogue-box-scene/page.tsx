@@ -278,6 +278,7 @@ export default  function  BuildAudioPerDialogueBoxScene(){
             },
             body: JSON.stringify({
                 dialogue_boxes_scenes: dialogueBoxesScenes,
+                parsedScreenplayId: parsedScreenplayId || "",
             })
         });
         const data = await result.json();

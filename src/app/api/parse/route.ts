@@ -14,7 +14,12 @@ export async function POST(request: Request) {
       scenes[0]?.heading ?? "Untitled Screenplay",
       text,
     );
-    const scenesOut = await insertSceneAction(screenplayId, scenes);
+
+    let scenesOut = scenes;
+    if (screenplayId && scenes.length > 0) {
+      scenesOut = await insertSceneAction(screenplayId, scenes);
+    }
+
     return NextResponse.json(
       {
         scenes: scenesOut,
