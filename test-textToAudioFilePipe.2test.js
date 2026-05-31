@@ -1,4 +1,4 @@
-const { ElevenLabsClient } = require("elevenlabs");
+const { ElevenLabsClient } = require("@elevenlabs/elevenlabs-js");
 const fs = require("fs");
 const { pipeline } = require("stream/promises");
 const { Readable } = require("stream");

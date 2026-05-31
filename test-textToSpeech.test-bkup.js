@@ -1,5 +1,5 @@
 
-const { ElevenLabsClient,play } = require("elevenlabs");
+const { ElevenLabsClient,play } = require("@elevenlabs/elevenlabs-js");
 
 const { Readable } = require("stream");
 const fs = require("fs");
