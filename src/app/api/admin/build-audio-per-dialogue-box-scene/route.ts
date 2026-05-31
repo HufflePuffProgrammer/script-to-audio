@@ -3,9 +3,11 @@ import { generateAudioFromDialogueBoxScene } from "@/lib/audio/generate-audio";
 export async function POST(request: Request){
     try{
         console.log("build-audio-per-dialogue-box-scene: BEFORE");
-        const {characterVoiceIds,screenplayId} = await request.json();
-        console.log("build-audio-per-dialogue-box-scene: characterVoiceIds", characterVoiceIds);
-        console.log("build-audio-per-dialogue-box-scene: screenplayId", screenplayId);
+        //const {characterVoiceIds,screenplayId} = await request.json();
+        const {dialogue_boxes_scenes,parsedScreenplayId} = await request.json();
+        
+        console.log("build-audio-per-dialogue-box-scene: dialogue_boxes_scenes", dialogue_boxes_scenes);
+        console.log("build-audio-per-dialogue-box-scene: parsedScreenplayId", parsedScreenplayId);
         if (dialogue_boxes_scenes ==null){
             return NextResponse.json({error:"No dialogue boxes scenes provided."}, {status: 401});
         }
