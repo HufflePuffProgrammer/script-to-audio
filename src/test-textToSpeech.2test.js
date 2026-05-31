@@ -1,4 +1,4 @@
-//const { ElevenLabsClient } = require("elevenlabs");
+//const { ElevenLabsClient } = require("@elevenlabs/elevenlabs-js");
 //const { Readable } = require("stream");
 import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
 import { Readable } from "stream";

@@ -1,4 +1,4 @@
-// //const { ElevenLabsClient, play } = require("elevenlabs");
+// //const { ElevenLabsClient, play } = require("@elevenlabs/elevenlabs-js");
 // import { ElevenLabsClient, play } from "@elevenlabs/elevenlabs-js";
 // const client = new ElevenLabsClient({
 //   apiKey: process.env.ELEVENLABS_API_KEY

@@ -1,4 +1,4 @@
-const { ElevenLabsClient,play } = require("elevenlabs");
+const { ElevenLabsClient,play } = require("@elevenlabs/elevenlabs-js");
 
 
 describe("ElevenLabs textToSpeech.convert", () => {
