@@ -180,23 +180,14 @@ export default function CharacterBuilderStep() {
 
         <div className="flex justify-between">
           <Link
-            href="/demo/steps/scenes"
+            href="/demo/steps/2-parse-scenes"
             className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
           >
             Back: Scenes
           </Link>
-          {/* {characterVoiceIds.length > 0 && (
-            <Link
-              href="/demo/steps/audio"
-              className="rounded-full bg-[#f9cf00] px-4 py-2 text-sm font-semibold text-[#1b1b1b] shadow-md transition hover:brightness-95"
-            >
-              Next: Audio Staging
-            </Link>
-          )}
-           */}
 
           <Link
-            href="/demo/steps/audio"
+            href="/demo/steps/4-stage-audio"
             className={`rounded-full bg-[#f9cf00] px-4 py-2 text-sm font-semibold text-[#1b1b1b] shadow-md transition ${ characterVoiceIds.length > 0 ?" hover:brightness-95" 
               : "pointer-events-none cursor-not-allowed border border-gray-500 border-slate-200 text-slate-700 opacity-60"}`}
           >

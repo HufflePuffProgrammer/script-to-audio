@@ -1,31 +1,36 @@
 "use client";
 
 import Link from "next/link";
-import { appName } from "@/lib/constants";
 
 const cards = [
   {
-    title: "Paste Text",
-    href: "/demo/steps/paste",
-    description: "Drop screenplay text in a simple input.",
+    title: "Screenplay",
+    href: "/demo/steps/1-paste-screenplay",
+    description: "Drop screenplay text.",
     icon: "📝",
   },
   {
     title: "Scenes",
-    href: "/demo/steps/scenes",
-    description: "View the first three scenes and details.",
+    href: "/demo/steps/1-paste-screenplay",
+    description: "Parse screenplay into scenes.",
     icon: "🎬",
   },
   {
-    title: "Audio Staging",
-    href: "/demo/steps/audio",
-    description: "Stage multi-voice audio (demo only).",
+    title: "Character",
+    href: "/demo/steps/1-paste-screenplay",
+    description: "Create character profiles using AI. Assign ElevenLabs voice IDs.",
+    icon: "🎭",
+  },
+  {
+    title: "Staging",
+    href: "/demo/steps/1-paste-screenplay",
+    description: "Stage audio scenes based on character profiles",
     icon: "🎧",
   },
   {
-    title: "Generate complete audio",
-    href: "/demo/steps/generate",
-    description: "Full audio render preview (demo only).",
+    title: "Audio",
+    href: "/demo/steps/1-paste-screenplay",
+    description: "Full audio render",
     icon: "🚀",
   },
 ];
@@ -38,21 +43,21 @@ export default function Home() {
           
           <div className="space-y-4">
             <h1 className="text-4xl font-black leading-tight text-[#111827] sm:text-5xl">
-              Every day has a story
+            Listen to your Screenplay
             </h1>
             <p className="text-base text-slate-600 sm:text-lg">
-              Listen to your screenplay with AI.
+              AI characters generated based on the description perform your screenplay using Elevan Labs Voices.
             </p>
           </div>
           
         </header>
 
         <div className="space-y-3">
-          <p className="text-lg font-semibold text-[#111827]">Script-to-Audio</p>
+          <p className="text-lg font-semibold text-[#111827]">Script-to-Audio by Soriano Software copyright 2026</p>
           
         </div>
 
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <section className="grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
           {cards.map((card, index) => (
             <Link
               key={card.title}

@@ -61,13 +61,13 @@ export default function GenerateStep() {
 
         <div className="flex justify-between">
           <Link
-            href="/steps/audio"
+            href="/demo/steps/4-stage-audio"
             className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
           >
             Back: Audio Staging
           </Link>
           <Link
-            href="/"
+            href="/demo"
             className="rounded-full bg-[#f9cf00] px-4 py-2 text-sm font-semibold text-[#1b1b1b] shadow-md transition hover:brightness-95"
           >
             Back to landing

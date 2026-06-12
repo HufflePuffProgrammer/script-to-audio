@@ -248,14 +248,14 @@ export default function AudioStep() {
 
         <div className="flex justify-between">
           <Link
-            href="/steps/character-builder"
+            href="/demo/steps/3-build-character"
             className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
           >
             Back: Character Builder
           </Link>
 
            <Link
-              href="/demo/steps/generate"
+              href="/demo/steps/5-generate-full-audio"
               className={`rounded-full bg-[#f9cf00] px-4 py-2 text-sm font-semibold text-[#1b1b1b] shadow-md transition ${generateAudioStatus === "ready" ? "hover:brightness-95" 
                 : "pointer-events-none cursor-not-allowed border border-gray-500 border-slate-200 text-slate-700 opacity-60"}`}
             >

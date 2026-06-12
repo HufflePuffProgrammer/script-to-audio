@@ -90,7 +90,7 @@ export default function PasteStep() {
             Back to landing
           </Link>
           <Link
-            href="/demo/steps/scenes"
+            href="/demo/steps/2-parse-scenes"
             aria-disabled={!hasText}
             tabIndex={hasText ? 0 : -1}
             className={`rounded-full px-4 py-2 text-sm font-semibold shadow-md transition ${
