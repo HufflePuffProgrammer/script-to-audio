@@ -9,23 +9,23 @@ export const DIALOGUE_BOXES_SCENES_KEY = "dialogueBoxesScenes";
 export function useScriptText() {
  
   const [text, setText] = useState("");
-  const textDemo =   `A Day in the life of a senior software engineer
+  const textDemo =   `A Day in the life of a Senior Software Engineer
 written by
 Richard Soriano
 
 INT. OFFICE - DAY
-PATRICIA,a mature, business mind woman in her 50's, strides into the office. She's panicked.
-RICHARD, cool, calm and mature man in his early 40's, sits calmly at the table.
+PATRICIA, a mature business minded woman in her 50's, strides into the office. She's panicked.
+RICHARD, a cool, calm and collected man in his early 40's, sits calmly at the table.
 PATRICIA
      I heard that users couldn't login after the deployment.
 RICHARD
      The bug has been fixed. It has been redeployed last night. All systems are up and running. We are good to go!
 PATRICIA
-     Thank you, Richard Soriano. I'm so glad I hired you.   You're a lifesaver.
+     Thank you, Richard Soriano. I'm so glad I hired you. You're a lifesaver.
 
 INT. BASEMENT - NIGHT
-JENNIFER, late teens, nerdy, glasses, nervously tip toes down the stairs. It's pitch black.
-GRACE, late teens and her best friend. She's into goth and has a wild, care-free attitude. She trails Carol down the basement steps.
+JENNIFER, (a teenage girl), glasses, nervously tip toes down the stairs. It's pitch black.
+GRACE, (late teenage girl) who is her best friend. She's girl who is into goth and has a wild, care-free attitude. She trails Carol down the basement steps.
 
 JENNIFER
      I can't see.
