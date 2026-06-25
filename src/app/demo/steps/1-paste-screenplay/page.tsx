@@ -75,7 +75,7 @@ export default function PasteStep() {
               type="button"
               onClick={handleClear}
               
-              className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+              className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
             >
              Reset
             </button>
@@ -85,7 +85,7 @@ export default function PasteStep() {
         <div className="flex justify-between">
           <Link
             href="/demo"
-            className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+            className="rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
           >
             Back to landing
           </Link>

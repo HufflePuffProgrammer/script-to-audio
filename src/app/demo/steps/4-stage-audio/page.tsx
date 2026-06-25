@@ -205,7 +205,7 @@ export default function AudioStep() {
             >
               {generateAudioStatus === "loading" ? "Generating..." : generateAudioStatus === "ready" ? "Generated" : "Generate audio"}
             </button>
-           <span className="text-sm text-slate-600">{message}: {generateAudioStatus}</span>
+           <span className="text-sm text-slate-600">{message}</span>
           </div>
           {!hasText && (
             <p className="text-sm text-red-600">

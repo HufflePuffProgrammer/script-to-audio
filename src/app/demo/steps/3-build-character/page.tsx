@@ -140,7 +140,7 @@ export default function CharacterBuilderStep() {
           </p>
           <h1 className="text-2xl font-bold text-slate-900">Character Builder</h1>
           <p className="text-slate-600">
-            Build a character profile. This is AI generated. Assign the best voiceID to each character..
+            Build a character profile. This is AI generated. Assign the best voiceID to each character.
           </p>
           <Progress activeIndex={2} />
         </header>
