@@ -127,7 +127,7 @@ export default function ScenesStep() {
 
         <section className="grid gap-4 lg:grid-cols-2">
           <div className="space-y-3 rounded-3xl bg-white p-6 shadow-md ring-1 ring-slate-200">
-            <p className="text-sm font-semibold text-slate-900">Part A — List</p>
+            <p className="text-sm font-semibold text-slate-900">List of Scenes</p>
             {firstThreeScenes.length === 0 && (
               <p className="text-sm text-slate-500">No scenes parsed yet.</p>
             )}
@@ -143,7 +143,7 @@ export default function ScenesStep() {
           </div>
 
           <div className="space-y-3 rounded-3xl bg-white p-6 shadow-md ring-1 ring-slate-200">
-            <p className="text-sm font-semibold text-slate-900">Part B — Details</p>
+            <p className="text-sm font-semibold text-slate-900">Scene Details</p>
             {firstThreeScenes.length === 0 && (
               <p className="text-sm text-slate-500">No details yet.</p>
             )}

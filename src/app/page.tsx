@@ -44,19 +44,14 @@ export default function Home() {
           
           <div className="space-y-4">
           <h1 className="text-4xl font-black leading-tight text-[#111827] sm:text-5xl">
-            Listen to your Screenplay
+            Listen to Your Screenplay
             </h1>
-            <p className="text-base text-slate-600 sm:text-lg">
-              AI characters generated based on the description perform your screenplay using Elevan Labs Voices.
+            <p className="text-base text-slate-600 font-semibold">
+              AI characters perform your screenplay.
             </p>
           </div>
           
         </header>
-
-        <div className="space-y-3">
-          <p className="text-lg font-semibold text-[#111827]">Script-to-Audio by Soriano Software copyright 2026</p>
-          
-        </div>
 
         <section className="grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
           {cards.map((card, index) => (
@@ -78,6 +73,10 @@ export default function Home() {
             </Link>
           ))}
         </section>
+        <footer className="space-y-3">
+          <p className="text-sm font-semibold text-[#111827]">Script-to-Audio by Soriano Software &copy; 2026</p>
+          
+        </footer>
       </div>
     </main>
   );
