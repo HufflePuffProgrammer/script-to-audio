@@ -200,7 +200,7 @@ export default function AudioStep() {
             <button
               type="button"
               onClick={() => generateAudio(firstThreeScenes[0])}
-              disabled={generateAudioStatus === "loading" || generateAudioStatus === "ready"}
+              disabled={generateAudioStatus === "loading" || generateAudioStatus === "ready" || generateAudioStatus === "error" || generateAudioStatus === "generating"}
               className="rounded-full bg-[#f9cf00] px-4 py-2 text-sm font-semibold text-[#1b1b1b] shadow-md transition hover:brightness-95"
             >
               {generateAudioStatus === "loading" ? "Generating..." : generateAudioStatus === "ready" ? "Generated" : "Generate audio"}

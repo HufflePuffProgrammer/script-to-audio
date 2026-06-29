@@ -12,7 +12,8 @@ npm run dev
 Visit http://localhost:3000 and paste ~800-1000 words of screenplay text to see the mock parser and profiling guardrails.
 
 ### Database
-- See `docs/db-setup.md` for Supabase env vars, schema, and integration notes.
+- See `docs/db-setup.md` for Supabase env vars, schema (`docs/schema.sql`), and integration notes.
+- DB helpers log failures to the `errors` table via `src/lib/db/logError.ts` (service role required).
 
 ### Debug helpers
 - UI: http://localhost:3000/steps/debug — runs a sample request to `/api/generate-audio` and plays the returned audio.

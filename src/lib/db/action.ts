@@ -1,7 +1,6 @@
-
 import { getSupabaseAdminClient } from "@/lib/supabaseServer";
 import { Scene } from "@/lib/types";
-
+import { logDbError } from "@/lib/db/logError";
 
 export async function insertScreenplayAction(
   title: string,
@@ -17,7 +16,11 @@ export async function insertScreenplayAction(
     .select("id")
     .single();
   if (screenplayError) {
-    console.error("Failed to insert screenplay data", screenplayError);
+    await logDbError("insertScreenplayAction", screenplayError.message, {
+      title,
+      raw_text_length: raw_text.length,
+      code: screenplayError.code,
+    });
     throw new Error("Failed to insert screenplay data");
   }
   return screenplayData?.id ?? null;
@@ -48,7 +51,11 @@ export async function insertSceneAction(
     .select("id, scene_number");
 
   if (scenesError) {
-    console.error("Supabase insert scenes failed:", scenesError);
+    await logDbError("insertSceneAction", scenesError.message, {
+      screenplay_id: screenplayId,
+      scene_count: scenes.length,
+      code: scenesError.code,
+    });
     throw new Error("Failed to insert scenes");
   }
 
@@ -76,29 +83,32 @@ export async function upsertVoiceIdToCharacterAction(
   labels: string,
   reason: string,
 ): Promise<string> {
-
-  const supabase = await getSupabaseAdminClient();
+  const supabase = getSupabaseAdminClient();
   if (!supabase) {
     throw new Error("Supabase is not configured");
   }
 
-  const {data, error} = await supabase
-  .from("character_voices")
-  .upsert({
-    screenplay_id: screenplayId,
-    character: characterName,
-    voice_id: rankedVoiceId,
-    description: description,
-    labels: labels,
-    reason: reason,
-  })
-  .select("id")
-  .single();
+  const { data, error } = await supabase
+    .from("character_voices")
+    .upsert({
+      screenplay_id: screenplayId,
+      character: characterName,
+      voice_id: rankedVoiceId,
+      description,
+      labels,
+      reason,
+    })
+    .select("id")
+    .single();
 
   if (error) {
-    console.error("upsertVoiceIdToCharacter:error:", error);
+    await logDbError("upsertVoiceIdToCharacterAction", error.message, {
+      screenplay_id: screenplayId,
+      character: characterName,
+      voice_id: rankedVoiceId,
+      code: error.code,
+    });
     throw error;
   }
   return data?.id != null ? String(data.id) : rankedVoiceId;
-
 }

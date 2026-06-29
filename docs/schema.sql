@@ -1,0 +1,74 @@
+-- Full Supabase schema for script-to-audio.
+-- Run in Supabase SQL editor (Dashboard → SQL → New query).
+
+create table screenplays (
+  id uuid primary key default gen_random_uuid(),
+  title text,
+  raw_text text,
+  created_at timestamptz default now()
+);
+
+create table scenes (
+  id uuid primary key default gen_random_uuid(),
+  screenplay_id uuid references screenplays(id) on delete cascade,
+  scene_number int,
+  heading text,
+  dialogue jsonb,
+  created_at timestamptz default now()
+);
+
+create table character_voices (
+  id uuid primary key default gen_random_uuid(),
+  screenplay_id uuid references screenplays(id) on delete cascade,
+  character text not null,
+  voice_id text,
+  description text,
+  labels jsonb,
+  reason text,
+  created_at timestamptz default now(),
+  unique (screenplay_id, character)
+);
+
+create table audio_assets (
+  id uuid primary key default gen_random_uuid(),
+  screenplay_id uuid references screenplays(id) on delete cascade,
+  scene_id uuid references scenes(id) on delete cascade,
+  audio_url text,
+  created_at timestamptz default now()
+);
+
+-- Server-side error log (written from src/lib/db/action.ts and data.ts via logDbError).
+create table errors (
+  id uuid primary key default gen_random_uuid(),
+  source text not null,
+  message text not null,
+  context jsonb,
+  created_at timestamptz default now()
+);
+
+create index errors_created_at_idx on errors (created_at desc);
+create index errors_source_idx on errors (source);
+
+-- RLS (adjust for your auth model)
+alter table screenplays enable row level security;
+alter table scenes enable row level security;
+alter table character_voices enable row level security;
+alter table audio_assets enable row level security;
+alter table errors enable row level security;
+
+create policy "screenplays_read_all" on screenplays for select using (true);
+create policy "scenes_read_all" on scenes for select using (true);
+create policy "character_voices_read_all" on character_voices for select using (true);
+create policy "audio_read_all" on audio_assets for select using (true);
+create policy "errors_read_service" on errors for select using (auth.role() = 'service_role');
+
+create policy "screenplays_write_service" on screenplays
+  for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
+create policy "scenes_write_service" on scenes
+  for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
+create policy "character_voices_write_service" on character_voices
+  for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
+create policy "audio_write_service" on audio_assets
+  for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
+create policy "errors_write_service" on errors
+  for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');

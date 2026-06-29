@@ -262,8 +262,8 @@ export default function AdminDbCheck() {
           <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm space-y-2">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-sm font-semibold text-gray-800">Build Complete Audio </p>
-                <p className="text-xs text-gray-600">Build complete Audio</p>
+                <p className="text-sm font-semibold text-gray-800">Page of Errors </p>
+                <p className="text-xs text-gray-600">DB, parsing, API callss</p>
               </div>
               <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
                 Link
@@ -271,10 +271,10 @@ export default function AdminDbCheck() {
             </div>
             <div className="flex gap-3">
              <Link 
-             href="/admin/concatenate-audio" 
+             href="/admin/error-page" 
              className="inline-flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
             >
-            Concatenate Audio
+            Go to Page of Errors
              </Link>
             </div>
           </section>   
