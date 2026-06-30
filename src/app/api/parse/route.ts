@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { parseScript } from "@/lib/parseScript";
-import { insertScreenplayAction, insertSceneAction } from "@/lib/db/action";
+import { insertScreenplayAction, insertSceneAction, markScreenplayStage } from "@/lib/db/action";
 
 export async function POST(request: Request) {
   try {
@@ -18,6 +18,8 @@ export async function POST(request: Request) {
     let scenesOut = scenes;
     if (screenplayId && scenes.length > 0) {
       scenesOut = await insertSceneAction(screenplayId, scenes);
+    } else if (screenplayId && scenes.length === 0) {
+      await markScreenplayStage(screenplayId, "no_scenes_found");
     }
 
     return NextResponse.json(
