@@ -17,6 +17,7 @@ Visit http://localhost:3000 and paste ~800-1000 words of screenplay text to see 
 
 ### Debug helpers
 - UI: http://localhost:3000/steps/debug — runs a sample request to `/api/generate-audio` and plays the returned audio.
+- Admin: http://localhost:3000/admin — utilities hub; `/admin/screenplay-stats` lists `screenplays` progress columns.
 - CLI smoke: `npm run smoke:generate` (dev server + `ELEVENLABS_API_KEY` required; override host with `SMOKE_URL`).
 - Local connectivity: `npm run debug:elevenlabs` to hit ElevenLabs directly from a script.
 - Admin smoke: `npm run smoke:admin` (calls `/api/admin/db-check` and `/api/admin/health`; override host with `SMOKE_URL`).

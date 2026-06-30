@@ -131,6 +131,26 @@ export type SectionConfig<TResult> = {
   title: string;
   selectItems: (results: TResult) => unknown[];
 }
+export type ScreenplayStatsDbRow = {
+  id: string;
+  title: string | null;
+  scene_count: number | null;
+  last_scene_parsed: number | null;
+  number_of_characters: number | null;
+  stage_of_development: string | null;
+  created_at: string;
+};
+
+export type ScreenplayStatsLastError = {
+  source: string;
+  message: string;
+  created_at: string;
+};
+
+/** Screenplay stats row plus the most recent `errors` row for that screenplay. */
+export type ScreenplayStatsRow = ScreenplayStatsDbRow & {
+  last_error: ScreenplayStatsLastError | null;
+};
 export const buildSections = <TResult,>(
   results: TResult | null,
   configs: SectionConfig<TResult>[],
@@ -141,6 +161,7 @@ export const buildSections = <TResult,>(
       items: config.selectItems(results),
     }))
 };
+
 
 
 // exporttype AudioPerDialogueBoxesResults = {

@@ -56,12 +56,15 @@ export async function insertSceneAction(
       scene_count: scenes.length,
       code: scenesError.code,
     });
+    await markScreenplayStage(screenplayId, "scenes_parse_failed");
     throw new Error("Failed to insert scenes");
   }
 
   if (!insertedScenes?.length) {
     return scenes;
   }
+
+  await updateScreenplayStats(screenplayId, scenes);
 
   return scenes.map((scene) => {
     const row = insertedScenes.find(
@@ -111,4 +114,73 @@ export async function upsertVoiceIdToCharacterAction(
     throw error;
   }
   return data?.id != null ? String(data.id) : rankedVoiceId;
+}
+
+async function updateScreenplayStats(
+  screenplayId: string,
+  scenes: Scene[],
+): Promise<void> {
+  const supabase = getSupabaseAdminClient();
+  if (!supabase || scenes.length === 0) {
+    return;
+  }
+
+  const characters = new Set<string>();
+  for (const scene of scenes) {
+    for (const name of scene.characters ?? []) {
+      if (name) {
+        characters.add(name);
+      }
+    }
+    for (const line of scene.dialogue) {
+      if (line.character && !line.isNarration) {
+        characters.add(line.character);
+      }
+    }
+  }
+
+  const lastSceneParsed = Math.max(...scenes.map((s) => s.sceneNumber));
+
+  const { error } = await supabase
+    .from("screenplays")
+    .update({
+      scene_count: scenes.length,
+      last_scene_parsed: lastSceneParsed,
+      number_of_characters: characters.size,
+      stage_of_development: "scenes_parsed",
+    })
+    .eq("id", screenplayId);
+
+  if (error) {
+    await logDbError("updateScreenplayStats", error.message, {
+      screenplay_id: screenplayId,
+      scene_count: scenes.length,
+      code: error.code,
+    });
+    await markScreenplayStage(screenplayId, "stats_update_failed");
+  }
+}
+
+/** Updates `stage_of_development` on a screenplay (e.g. after parse failure). */
+export async function markScreenplayStage(
+  screenplayId: string,
+  stage: string,
+): Promise<void> {
+  const supabase = getSupabaseAdminClient();
+  if (!supabase) {
+    return;
+  }
+
+  const { error } = await supabase
+    .from("screenplays")
+    .update({ stage_of_development: stage })
+    .eq("id", screenplayId);
+
+  if (error) {
+    await logDbError("markScreenplayStage", error.message, {
+      screenplay_id: screenplayId,
+      stage,
+      code: error.code,
+    });
+  }
 }

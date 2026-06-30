@@ -5,6 +5,10 @@ create table screenplays (
   id uuid primary key default gen_random_uuid(),
   title text,
   raw_text text,
+  scene_count int default 0,
+  last_scene_parsed int,
+  number_of_characters int default 0,
+  stage_of_development text default 'created',
   created_at timestamptz default now()
 );
 

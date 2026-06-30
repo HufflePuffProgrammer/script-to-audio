@@ -1,5 +1,10 @@
 import { getSupabaseAdminClient } from "@/lib/supabaseServer";
 import { logDbError } from "@/lib/db/logError";
+import {
+  ScreenplayStatsDbRow,
+  ScreenplayStatsLastError,
+  ScreenplayStatsRow,
+} from "@/lib/types";
 
 /** Row shape returned from `screenplays` table selects. */
 export type ScreenplayDbRow = {
@@ -8,6 +13,58 @@ export type ScreenplayDbRow = {
   raw_text: string | null;
   created_at: string;
 };
+
+function screenplayIdFromErrorContext(
+  context: unknown,
+): string | null {
+  if (context == null || typeof context !== "object") {
+    return null;
+  }
+  const screenplayId = (context as Record<string, unknown>).screenplay_id;
+  return typeof screenplayId === "string" ? screenplayId : null;
+}
+
+async function attachRecentErrors(
+  screenplays: ScreenplayStatsDbRow[],
+): Promise<ScreenplayStatsRow[]> {
+  if (screenplays.length === 0) {
+    return [];
+  }
+
+  const serverClient = getSupabaseAdminClient();
+  if (!serverClient) {
+    return screenplays.map((row) => ({ ...row, last_error: null }));
+  }
+
+  const { data: errorRows, error } = await serverClient
+    .from("errors")
+    .select("source, message, context, created_at")
+    .order("created_at", { ascending: false })
+    .limit(500);
+
+  if (error) {
+    await logDbError("attachRecentErrors", error.message, { code: error.code });
+    return screenplays.map((row) => ({ ...row, last_error: null }));
+  }
+
+  const lastErrorByScreenplay = new Map<string, ScreenplayStatsLastError>();
+  for (const row of errorRows ?? []) {
+    const screenplayId = screenplayIdFromErrorContext(row.context);
+    if (!screenplayId || lastErrorByScreenplay.has(screenplayId)) {
+      continue;
+    }
+    lastErrorByScreenplay.set(screenplayId, {
+      source: row.source,
+      message: row.message,
+      created_at: row.created_at,
+    });
+  }
+
+  return screenplays.map((row) => ({
+    ...row,
+    last_error: lastErrorByScreenplay.get(row.id) ?? null,
+  }));
+}
 
 export async function verifyVoiceIdExists(
   screenplayId: string,
@@ -64,4 +121,27 @@ export async function getScreenplayData(
     raw_text: screenplayData.raw_text,
     created_at: screenplayData.created_at,
   };
+}
+
+export async function getScreenplayStats(
+  limit: number,
+): Promise<ScreenplayStatsRow[]> {
+  const serverClient = getSupabaseAdminClient();
+  if (!serverClient) {
+    throw new Error("Supabase admin client not found");
+  }
+  const { data, error } = await serverClient
+    .from("screenplays")
+    .select(
+      "id, title, scene_count, last_scene_parsed, number_of_characters, stage_of_development, created_at",
+    )
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) {
+    await logDbError("getScreenplayStats", error.message, {
+      code: error.code,
+    });
+    throw new Error("Failed to get screenplay stats");
+  }
+  return attachRecentErrors((data ?? []) as ScreenplayStatsDbRow[]);
 }
