@@ -2,12 +2,16 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 import {
+  AUTH_DASHBOARD_PATH,
   AUTH_LOGIN_PATH,
   AUTH_NOT_AUTHORIZED_PATH,
   isAdminApiPath,
+  isAdminProtectedPath,
   isAuthProtectedPath,
+  isMemberApiPath,
 } from "@/lib/auth/routes";
-import { adminApiGuardResponse } from "@/lib/auth/apiGuard";
+import { adminApiGuardResponse, memberApiGuardResponse } from "@/lib/auth/apiGuard";
+import { isAdministrator, parseUserRole } from "@/lib/auth/roles";
 
 export async function updateSession(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -45,6 +49,13 @@ export async function updateSession(request: NextRequest) {
   const isProtected = isAuthProtectedPath(pathname);
   const isLogin = pathname === AUTH_LOGIN_PATH;
 
+  if (isMemberApiPath(pathname)) {
+    const blocked = await memberApiGuardResponse(supabase, user);
+    if (blocked) {
+      return blocked;
+    }
+  }
+
   if (isAdminApiPath(pathname)) {
     const blocked = await adminApiGuardResponse(supabase, user);
     if (blocked) {
@@ -62,13 +73,22 @@ export async function updateSession(request: NextRequest) {
   if (isProtected && user) {
     const { data: member, error: memberError } = await supabase
       .from("authorized_users")
-      .select("user_id")
+      .select("user_id, role")
       .eq("user_id", user.id)
       .maybeSingle();
 
     if (memberError || !member) {
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = AUTH_NOT_AUTHORIZED_PATH;
+      return NextResponse.redirect(redirectUrl);
+    }
+
+    if (
+      isAdminProtectedPath(pathname) &&
+      !isAdministrator(parseUserRole(member.role))
+    ) {
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.pathname = AUTH_DASHBOARD_PATH;
       return NextResponse.redirect(redirectUrl);
     }
   }

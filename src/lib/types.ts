@@ -139,6 +139,7 @@ export type ScreenplayStatsDbRow = {
   number_of_characters: number | null;
   stage_of_development: string | null;
   created_at: string;
+  owner_id?: string | null;
 };
 
 export type ScreenplayStatsLastError = {

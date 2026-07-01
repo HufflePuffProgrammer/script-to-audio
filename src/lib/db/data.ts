@@ -133,7 +133,7 @@ export async function getScreenplayStats(
   const { data, error } = await serverClient
     .from("screenplays")
     .select(
-      "id, title, scene_count, last_scene_parsed, number_of_characters, stage_of_development, created_at",
+      "id, title, scene_count, last_scene_parsed, number_of_characters, stage_of_development, created_at, owner_id",
     )
     .order("created_at", { ascending: false })
     .limit(limit);
@@ -142,6 +142,32 @@ export async function getScreenplayStats(
       code: error.code,
     });
     throw new Error("Failed to get screenplay stats");
+  }
+  return attachRecentErrors((data ?? []) as ScreenplayStatsDbRow[]);
+}
+
+export async function getScreenplayStatsForOwner(
+  ownerId: string,
+  limit: number,
+): Promise<ScreenplayStatsRow[]> {
+  const serverClient = getSupabaseAdminClient();
+  if (!serverClient) {
+    throw new Error("Supabase admin client not found");
+  }
+  const { data, error } = await serverClient
+    .from("screenplays")
+    .select(
+      "id, title, scene_count, last_scene_parsed, number_of_characters, stage_of_development, created_at, owner_id",
+    )
+    .eq("owner_id", ownerId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) {
+    await logDbError("getScreenplayStatsForOwner", error.message, {
+      code: error.code,
+      owner_id: ownerId,
+    });
+    throw new Error("Failed to get screenplay stats for owner");
   }
   return attachRecentErrors((data ?? []) as ScreenplayStatsDbRow[]);
 }

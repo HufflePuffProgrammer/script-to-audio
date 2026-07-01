@@ -1,9 +1,12 @@
 import Link from "next/link";
 
 import { logoutAction } from "@/app/login/actions";
+import { UserScreenplayList } from "@/components/dashboard/UserScreenplayList";
+import { isAdministrator, roleDisplayName } from "@/lib/auth/roles";
 import { requireAuthorizedMember } from "@/lib/auth/membership";
+import { getScreenplayStatsForOwner } from "@/lib/db/data";
 
-const memberLinks = [
+const adminLinks = [
   {
     href: "/admin",
     title: "Admin utilities",
@@ -12,37 +15,29 @@ const memberLinks = [
   {
     href: "/admin/screenplay-stats",
     title: "Screenplay stats",
-    description: "Parse progress and error state per screenplay.",
-  },
-  {
-    href: "/admin/error-page",
-    title: "Error log",
-    description: "Recent rows from the errors table.",
-  },
-  {
-    href: "/demo",
-    title: "Demo workflow",
-    description: "Paste → parse → character → audio pipeline.",
+    description: "Parse progress and error state for all screenplays.",
   },
 ];
 
 export default async function DashboardPage() {
-  const { user, memberEmail } = await requireAuthorizedMember("/dashboard");
+  const { user, memberEmail, role } =
+    await requireAuthorizedMember("/dashboard");
+
+  const screenplays = isAdministrator(role)
+    ? []
+    : await getScreenplayStatsForOwner(user.id, 50);
 
   return (
     <main className="min-h-screen bg-[#f4f6fb] px-6 py-10">
-      <div className="mx-auto flex max-w-3xl flex-col gap-6">
+      <div className="mx-auto flex max-w-5xl flex-col gap-6">
         <header className="flex flex-wrap items-start justify-between gap-4">
           <div className="space-y-1">
             <p className="text-sm font-semibold uppercase text-green-600">
-              Member dashboard
+              {roleDisplayName(role)} dashboard
             </p>
             <h1 className="text-2xl font-bold text-slate-900">Welcome</h1>
             <p className="text-sm text-slate-600">
               Signed in as <strong>{user.email ?? memberEmail}</strong>
-            </p>
-            <p className="text-xs text-slate-500">
-              Membership verified via <code>authorized_users</code>.
             </p>
           </div>
           <form action={logoutAction}>
@@ -55,18 +50,33 @@ export default async function DashboardPage() {
           </form>
         </header>
 
-        <section className="grid gap-3 sm:grid-cols-2">
-          {memberLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-blue-200 hover:shadow-md"
-            >
-              <p className="text-sm font-semibold text-slate-900">{link.title}</p>
-              <p className="mt-1 text-xs text-slate-600">{link.description}</p>
-            </Link>
-          ))}
-        </section>
+        {isAdministrator(role) ? (
+          <section className="grid gap-3 sm:grid-cols-2">
+            {adminLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-blue-200 hover:shadow-md"
+              >
+                <p className="text-sm font-semibold text-slate-900">
+                  {link.title}
+                </p>
+                <p className="mt-1 text-xs text-slate-600">
+                  {link.description}
+                </p>
+              </Link>
+            ))}
+          </section>
+        ) : (
+          <UserScreenplayList
+            screenplays={screenplays}
+            emptyHint={
+              role === "test"
+                ? "No test screenplays yet. Use Parse new on your dashboard to add one."
+                : undefined
+            }
+          />
+        )}
       </div>
     </main>
   );

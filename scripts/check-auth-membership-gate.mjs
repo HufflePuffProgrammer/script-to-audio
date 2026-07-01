@@ -50,9 +50,9 @@ if (loginActions.includes("isAuthorizedMember")) {
 
 console.log("\nManual checks:");
 console.log("  1. npm run auth:add-member -- your@email.com");
-console.log("  2. Sign in at /login → /dashboard with admin links");
+console.log("  2. Sign in at /login → /dashboard (role-based content)");
 console.log("  3. Remove row from authorized_users → sign in → /not-authorized");
-console.log("  4. /admin requires membership (layout gate)");
+console.log("  4. /admin requires administrator role (Step 7)");
 
 console.log("");
 if (failed) {

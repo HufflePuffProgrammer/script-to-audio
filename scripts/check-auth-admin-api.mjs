@@ -44,11 +44,18 @@ if (routesSource.includes("isAdminApiPath")) {
   failed = true;
 }
 
+if (middlewareSource.includes("isAdministrator")) {
+  console.log("  OK    middleware enforces administrator on /admin");
+} else {
+  console.error("  FAIL  middleware missing administrator check for /admin");
+  failed = true;
+}
+
 if (
   middlewareSource.includes("isAdminApiPath") &&
   middlewareSource.includes("adminApiGuardResponse")
 ) {
-  console.log("  OK    middleware guards /api/admin/*");
+  console.log("  OK    middleware guards /api/admin/* (administrator only)");
 } else {
   console.error("  FAIL  middleware missing admin API guard");
   failed = true;
@@ -71,8 +78,9 @@ try {
   console.log("  INFO  Skipped live 401 check (dev server not running)");
 }
 
-console.log("\nManual checks (signed in as member in browser):");
+console.log("\nManual checks (signed in as administrator in browser):");
 console.log("  • DevTools → fetch('/api/admin/health') → 200 or health JSON");
+console.log("  • Non-admin member → same fetch → 403");
 console.log("  • Logged out → same fetch → 401");
 
 console.log("");

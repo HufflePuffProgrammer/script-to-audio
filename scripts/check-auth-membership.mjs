@@ -28,7 +28,7 @@ const supabase = createServiceRoleClient(url, serviceKey);
 
 const { data: rows, error: tableError } = await supabase
   .from("authorized_users")
-  .select("id, user_id, email, created_at")
+  .select("id, user_id, email, role, created_at")
   .order("created_at", { ascending: false })
   .limit(20);
 
@@ -44,12 +44,12 @@ console.log(`  OK    authorized_users table exists (${rows?.length ?? 0} member(
 
 if (!rows?.length) {
   console.log("\n  WARN  No members yet. Add one:");
-  console.log("        npm run auth:add-member -- your@email.com");
+  console.log("        npm run auth:add-member -- your@email.com [role]");
   console.log("     or insert manually in SQL (see docs/auth-setup.md Step 2).");
 }
 
 for (const row of rows ?? []) {
-  console.log(`  INFO  member: ${row.email} (${row.user_id})`);
+  console.log(`  INFO  member: ${row.email} (${row.user_id}) role=${row.role ?? "user"}`);
 }
 
 if (testEmail) {

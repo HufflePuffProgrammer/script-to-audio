@@ -5,6 +5,7 @@ import { logDbError } from "@/lib/db/logError";
 export async function insertScreenplayAction(
   title: string,
   raw_text: string,
+  ownerId?: string | null,
 ): Promise<string | null> {
   const serverClient = getSupabaseAdminClient();
   if (!serverClient) {
@@ -12,7 +13,11 @@ export async function insertScreenplayAction(
   }
   const { data: screenplayData, error: screenplayError } = await serverClient
     .from("screenplays")
-    .insert({ title, raw_text })
+    .insert({
+      title,
+      raw_text,
+      ...(ownerId ? { owner_id: ownerId } : {}),
+    })
     .select("id")
     .single();
   if (screenplayError) {

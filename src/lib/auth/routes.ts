@@ -5,13 +5,25 @@ export const AUTH_LOGIN_PATH = "/login";
 
 export const AUTH_NOT_AUTHORIZED_PATH = "/not-authorized";
 
+export const AUTH_DASHBOARD_PATH = "/dashboard";
+
 export function isAuthProtectedPath(pathname: string): boolean {
   return AUTH_PROTECTED_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
 }
 
+/** Admin UI routes — administrators only (Step 7). */
+export function isAdminProtectedPath(pathname: string): boolean {
+  return pathname === "/admin" || pathname.startsWith("/admin/");
+}
+
 /** Admin API routes guarded in middleware (Step 6). */
 export function isAdminApiPath(pathname: string): boolean {
   return pathname === "/api/admin" || pathname.startsWith("/api/admin/");
+}
+
+/** Member API routes — authorized users only; separate from public /demo APIs. */
+export function isMemberApiPath(pathname: string): boolean {
+  return pathname === "/api/member" || pathname.startsWith("/api/member/");
 }
