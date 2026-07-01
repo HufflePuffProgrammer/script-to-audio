@@ -53,12 +53,23 @@ create table errors (
 create index errors_created_at_idx on errors (created_at desc);
 create index errors_source_idx on errors (source);
 
+-- Member allowlist (Supabase Auth → app access). See docs/auth-setup.md Step 2.
+create table authorized_users (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete cascade not null unique,
+  email text not null,
+  created_at timestamptz default now()
+);
+
+create index authorized_users_email_idx on authorized_users (email);
+
 -- RLS (adjust for your auth model)
 alter table screenplays enable row level security;
 alter table scenes enable row level security;
 alter table character_voices enable row level security;
 alter table audio_assets enable row level security;
 alter table errors enable row level security;
+alter table authorized_users enable row level security;
 
 create policy "screenplays_read_all" on screenplays for select using (true);
 create policy "scenes_read_all" on scenes for select using (true);
@@ -75,4 +86,9 @@ create policy "character_voices_write_service" on character_voices
 create policy "audio_write_service" on audio_assets
   for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
 create policy "errors_write_service" on errors
+  for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
+
+create policy "authorized_users_read_own" on authorized_users
+  for select using (auth.uid() = user_id);
+create policy "authorized_users_write_service" on authorized_users
   for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');

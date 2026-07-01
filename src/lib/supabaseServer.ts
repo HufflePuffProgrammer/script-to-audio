@@ -1,5 +1,7 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
+import { nodeSupabaseOptions } from "@/lib/supabase/nodeOptions";
+
 let adminClient: SupabaseClient | null = null;
 
 export const getSupabaseAdminClient = () => {
@@ -12,9 +14,14 @@ export const getSupabaseAdminClient = () => {
   }
 
   if (!adminClient) {
-    adminClient = createClient(url, serviceKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
+    adminClient = createClient(
+      url,
+      serviceKey,
+      nodeSupabaseOptions({
+        autoRefreshToken: false,
+        persistSession: false,
+      }),
+    );
   }
 
   return adminClient;

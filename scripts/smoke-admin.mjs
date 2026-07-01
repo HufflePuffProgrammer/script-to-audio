@@ -1,44 +1,42 @@
 // Smoke test for admin connectivity endpoints.
 // Requires dev server running (SMOKE_URL defaults to http://localhost:3000).
-// Run with: npm run smoke:admin
+// NOTE: After auth Step 6, /api/admin/* requires a logged-in member session.
+// This script runs without cookies and expects 401 — use browser DevTools while
+// signed in to test successful responses, or run: npm run check:auth-step6
 
 const baseUrl = process.env.SMOKE_URL || "http://localhost:3000";
 
-const check = async (path, method = "GET", body) => {
+const checkUnauthorized = async (path, method = "GET", body) => {
   const res = await fetch(`${baseUrl}${path}`, {
     method,
     headers: { "content-type": "application/json" },
     body: body ? JSON.stringify(body) : undefined,
   });
   const text = await res.text();
-  let json;
-  try {
-    json = JSON.parse(text);
-  } catch {
-    json = null;
+  if (res.status !== 401) {
+    throw new Error(
+      `${path} expected 401 Unauthorized without session, got ${res.status}: ${text}`,
+    );
   }
-  if (!res.ok || (json && json.ok === false)) {
-    throw new Error(`${path} failed: ${res.status} ${res.statusText} ${text}`);
-  }
-  return json ?? text;
+  return text;
 };
 
 const main = async () => {
-  console.log(`Smoke against ${baseUrl}`);
+  console.log(`Smoke against ${baseUrl} (unauthenticated — expect 401)`);
 
   console.log("Checking /api/admin/db-check ...");
-  const db = await check("/api/admin/db-check", "POST");
-  console.log("db-check OK", db);
+  await checkUnauthorized("/api/admin/db-check", "POST");
+  console.log("db-check correctly returned 401");
 
   console.log("Checking /api/admin/health ...");
-  const health = await check("/api/admin/health");
-  console.log("health OK", health);
+  await checkUnauthorized("/api/admin/health");
+  console.log("health correctly returned 401");
 
-  console.log("Smoke admin passed.");
+  console.log("Smoke admin passed (routes are protected).");
+  console.log("Sign in at /login and run fetch('/api/admin/health') in DevTools to test member access.");
 };
 
 main().catch((err) => {
   console.error(err);
   process.exit(1);
 });
-

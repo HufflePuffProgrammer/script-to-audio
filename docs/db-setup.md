@@ -101,6 +101,10 @@ create policy "errors_write_service" on errors
   for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
 ```
 
+**Existing project — add auth membership table:**
+
+See [`docs/auth-step2.sql`](./auth-step2.sql) or **Auth Step 2** in [`docs/auth-setup.md`](./auth-setup.md).
+
 **Scene ID type (optional):** If you use app-level scene keys (e.g. `"2"`) instead of `scenes.id` uuids:
 
 ```sql
