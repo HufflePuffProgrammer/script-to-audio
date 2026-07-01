@@ -393,3 +393,18 @@ fetch("/api/admin/health").then((r) => r.json()).then(console.log)
 | `Node.js 20 detected without native WebSocket` | Fixed in repo via `ws` package — run `npm install` and retry |
 | Admin API returns `401` while signed in | Call from same browser session; cookies must be sent |
 | Admin API returns `403` | Add user via `npm run auth:add-member -- email` |
+| Vercel build fails on `/admin/*` prerender | Set Supabase env vars in Vercel project settings; `/admin` and `/dashboard` use `force-dynamic` |
+
+## Deploying (Vercel)
+
+Add these in **Project → Settings → Environment Variables** (Production + Preview):
+
+| Variable | Required |
+|----------|----------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Yes |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes |
+| `SUPABASE_SERVICE_ROLE_KEY` | Yes (server DB writes) |
+
+Also add your app URL to Supabase **Authentication → URL Configuration** redirect URLs (e.g. `https://your-app.vercel.app/**`).
+
+Without the `NEXT_PUBLIC_*` vars, login and protected pages will fail at **runtime** even if the build succeeds.
