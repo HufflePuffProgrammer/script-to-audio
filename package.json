@@ -10,7 +10,15 @@
     "lint:fix": "eslint --fix",
     "type-check": "tsc --noEmit",
     "db:types": "supabase gen types typescript --project-id YOUR_PROJECT_ID > types/database.ts",
-    "test": "jest"
+    "test": "jest",
+    "check:auth-env": "node scripts/check-auth-env.mjs",
+    "check:auth-step2": "node scripts/check-auth-membership.mjs",
+    "check:auth-step3": "node scripts/check-auth-middleware.mjs",
+    "check:auth-step4": "node scripts/check-auth-login.mjs",
+    "check:auth-step5": "node scripts/check-auth-membership-gate.mjs",
+    "check:auth-step6": "node scripts/check-auth-admin-api.mjs",
+    "auth:add-member": "node scripts/add-authorized-user.mjs",
+    "smoke:admin": "node scripts/smoke-admin.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
@@ -18,19 +26,22 @@
     "@ffmpeg/core": "^0.12.10",
     "@ffmpeg/ffmpeg": "^0.12.15",
     "@ffmpeg/util": "^0.12.2",
+    "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.87.1",
     "axios": "^1.13.2",
     "dotenv": "^16.4.5",
     "next": "^16.2.6",
     "pdfjs-dist": "^4.10.38",
     "react": "19.2.1",
-    "react-dom": "19.2.1"
+    "react-dom": "19.2.1",
+    "ws": "^8.21.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/ws": "^8.18.1",
     "baseline-browser-mapping": "^2.10.33",
     "eslint": "^9",
     "eslint-config-next": "16.0.8",
