@@ -6,6 +6,7 @@ create table if not exists authorized_users (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users(id) on delete cascade not null unique,
   email text not null,
+  role text not null default 'user' check (role in ('administrator', 'user', 'test')),
   created_at timestamptz default now()
 );
 

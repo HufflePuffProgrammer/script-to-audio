@@ -11,7 +11,8 @@ Member login uses **Supabase Auth**. Step 1 is all configuration in the Supabase
 | 3 | `@supabase/ssr` clients + middleware | Done |
 | 4 | `/login` page | Done |
 | 5 | `/dashboard` + membership check | Done |
-| 6 | Protect `/api/admin/*` routes | **Done** |
+| 6 | Protect `/api/admin/*` routes | Done |
+| 7 | Roles + per-user screenplays + role dashboards | **Done** |
 
 ---
 
@@ -377,6 +378,60 @@ fetch("/api/admin/health").then((r) => r.json()).then(console.log)
 
 ---
 
+## Step 7 — Roles and per-user screenplays
+
+Three member roles:
+
+| Role | Dashboard |
+|------|-----------|
+| `administrator` | Links to **Admin** and **Screenplay stats** (all screenplays) |
+| `user` | Table of **your** screenplays (`owner_id` = your Auth user) |
+| `test` | Same as `user` (isolated test account workflow) |
+
+### 7.1 Run the SQL migration
+
+In Supabase **SQL editor**, run:
+
+```
+docs/auth-roles.sql
+```
+
+This adds `authorized_users.role` and `screenplays.owner_id`.
+
+### 7.2 Add members with roles
+
+```bash
+npm run auth:add-member -- dev@example.com administrator
+npm run auth:add-member -- writer@example.com user
+npm run auth:add-member -- tester@example.com test
+```
+
+Promote an existing member:
+
+```sql
+update authorized_users set role = 'administrator' where email = 'you@example.com';
+```
+
+### 7.3 How screenplays are owned
+
+Member parses use **`POST /api/member/parse`** (from **Dashboard → Parse new**). Those rows get `owner_id` set to the signed-in user.
+
+The public **`/demo`** workflow and **`POST /api/parse`** are unchanged: no login required, and screenplays are **not** assigned to any user (`owner_id` stays null).
+
+### 7.4 Access rules
+
+- `/dashboard` — any member (`user`, `test`, or `administrator`)
+- `/admin` and `/api/admin/*` — **administrator** only (others redirect to `/dashboard` or get `403`)
+
+### Step 7 checklist
+
+- [ ] `docs/auth-roles.sql` applied
+- [ ] At least one `administrator` member
+- [ ] Administrator dashboard shows admin + screenplay stats links only
+- [ ] User/test dashboard lists owned screenplays after parsing while signed in
+
+---
+
 ## Troubleshooting
 
 | Problem | Fix |
@@ -392,7 +447,8 @@ fetch("/api/admin/health").then((r) => r.json()).then(console.log)
 | Redirect loop on `/login` | Clear cookies for localhost; check Supabase redirect URLs |
 | `Node.js 20 detected without native WebSocket` | Fixed in repo via `ws` package — run `npm install` and retry |
 | Admin API returns `401` while signed in | Call from same browser session; cookies must be sent |
-| Admin API returns `403` | Add user via `npm run auth:add-member -- email` |
+| Admin API returns `403` | User is not an **administrator** — run `npm run auth:add-member -- email administrator` |
+| Non-admin sees admin links on dashboard | Run `docs/auth-roles.sql`; only `administrator` role gets admin links |
 | Vercel build fails on `/admin/*` prerender | Set Supabase env vars in Vercel project settings; `/admin` and `/dashboard` use `force-dynamic` |
 
 ## Deploying (Vercel)
